@@ -1,0 +1,263 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		822503D11833A58600A0E16D /* simpleSprite.frag in Sources */ = {isa = PBXBuildFile; fileRef = 822503CF1833A58600A0E16D /* simpleSprite.frag */; };
+		822503D21833A58600A0E16D /* simpleSprite.vert in Sources */ = {isa = PBXBuildFile; fileRef = 822503D01833A58600A0E16D /* simpleSprite.vert */; };
+		828D532F1825B7FC00F762BB /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 828D532E1825B7FC00F762BB /* OpenGL.framework */; };
+		828D53311825B80300F762BB /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 828D53301825B80300F762BB /* QuartzCore.framework */; };
+		828D53331825B80D00F762BB /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 828D53321825B80D00F762BB /* Cocoa.framework */; };
+		828D53461825BAC800F762BB /* SimpleSprite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 828D53451825BAC800F762BB /* SimpleSprite.cpp */; };
+		82DEEE8C1833AE5E00F6DF6F /* libEsgiGL.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 82DEEE8B1833AE5E00F6DF6F /* libEsgiGL.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		828D531B1825B7C900F762BB /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = usr/share/man/man1;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		822503CF1833A58600A0E16D /* simpleSprite.frag */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = simpleSprite.frag; sourceTree = "<group>"; };
+		822503D01833A58600A0E16D /* simpleSprite.vert */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.glsl; path = simpleSprite.vert; sourceTree = "<group>"; };
+		828D531D1825B7C900F762BB /* SimpleSprite */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SimpleSprite; sourceTree = BUILT_PRODUCTS_DIR; };
+		828D532E1825B7FC00F762BB /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		828D53301825B80300F762BB /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		828D53321825B80D00F762BB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		828D53451825BAC800F762BB /* SimpleSprite.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SimpleSprite.cpp; sourceTree = SOURCE_ROOT; };
+		82DEEE8B1833AE5E00F6DF6F /* libEsgiGL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libEsgiGL.a; path = ../../DerivedData/OpenGL_4ijv/Build/Products/Debug/libEsgiGL.a; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		828D531A1825B7C900F762BB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				82DEEE8C1833AE5E00F6DF6F /* libEsgiGL.a in Frameworks */,
+				828D53331825B80D00F762BB /* Cocoa.framework in Frameworks */,
+				828D53311825B80300F762BB /* QuartzCore.framework in Frameworks */,
+				828D532F1825B7FC00F762BB /* OpenGL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		828D53121825B7C900F762BB = {
+			isa = PBXGroup;
+			children = (
+				828D53351825B98200F762BB /* Shaders */,
+				828D53341825B82000F762BB /* Frameworks */,
+				828D53201825B7C900F762BB /* Sources */,
+				828D531E1825B7C900F762BB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		828D531E1825B7C900F762BB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				828D531D1825B7C900F762BB /* SimpleSprite */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		828D53201825B7C900F762BB /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				828D53451825BAC800F762BB /* SimpleSprite.cpp */,
+			);
+			name = Sources;
+			path = SimpleSprite;
+			sourceTree = "<group>";
+		};
+		828D53341825B82000F762BB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				82DEEE8B1833AE5E00F6DF6F /* libEsgiGL.a */,
+				828D53321825B80D00F762BB /* Cocoa.framework */,
+				828D53301825B80300F762BB /* QuartzCore.framework */,
+				828D532E1825B7FC00F762BB /* OpenGL.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		828D53351825B98200F762BB /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				822503CF1833A58600A0E16D /* simpleSprite.frag */,
+				822503D01833A58600A0E16D /* simpleSprite.vert */,
+			);
+			name = Shaders;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		828D531C1825B7C900F762BB /* SimpleSprite */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 828D53271825B7C900F762BB /* Build configuration list for PBXNativeTarget "SimpleSprite" */;
+			buildPhases = (
+				828D53191825B7C900F762BB /* Sources */,
+				828D531A1825B7C900F762BB /* Frameworks */,
+				828D531B1825B7C900F762BB /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SimpleSprite;
+			productName = SimpleSprite;
+			productReference = 828D531D1825B7C900F762BB /* SimpleSprite */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		828D53141825B7C900F762BB /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0430;
+				ORGANIZATIONNAME = none;
+			};
+			buildConfigurationList = 828D53171825B7C900F762BB /* Build configuration list for PBXProject "SimpleSprite" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 828D53121825B7C900F762BB;
+			productRefGroup = 828D531E1825B7C900F762BB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				828D531C1825B7C900F762BB /* SimpleSprite */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		828D53191825B7C900F762BB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				828D53461825BAC800F762BB /* SimpleSprite.cpp in Sources */,
+				822503D11833A58600A0E16D /* simpleSprite.frag in Sources */,
+				822503D21833A58600A0E16D /* simpleSprite.vert in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		828D53251825B7C900F762BB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		828D53261825B7C900F762BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		828D53281825B7C900F762BB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../DerivedData/OpenGL_4A/Build/Products/Debug\"",
+					"\"$(SRCROOT)/../../DerivedData/OpenGL_4A/Build/Products/Debug\"",
+					"\"$(SRCROOT)/../../DerivedData/OpenGL_4ijv/Build/Products/Debug\"",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		828D53291825B7C900F762BB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../DerivedData/OpenGL_4A/Build/Products/Debug\"",
+					"\"$(SRCROOT)/../../DerivedData/OpenGL_4A/Build/Products/Debug\"",
+					"\"$(SRCROOT)/../../DerivedData/OpenGL_4ijv/Build/Products/Debug\"",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		828D53171825B7C900F762BB /* Build configuration list for PBXProject "SimpleSprite" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				828D53251825B7C900F762BB /* Debug */,
+				828D53261825B7C900F762BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		828D53271825B7C900F762BB /* Build configuration list for PBXNativeTarget "SimpleSprite" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				828D53281825B7C900F762BB /* Debug */,
+				828D53291825B7C900F762BB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 828D53141825B7C900F762BB /* Project object */;
+}

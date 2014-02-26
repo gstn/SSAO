@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="common\cube.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\EsgiMesh.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="common\matrix.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+    <ClCompile Include="Plateforme\Windows\EsgiEGL.cpp">
+      <Filter>Plateforme\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Plateforme\Windows\EsgiWindows.cpp">
+      <Filter>Plateforme\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Plateforme\Windows\EsgiWinExtensions.cpp">
+      <Filter>Plateforme\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="EsgiGL.cpp" />
+    <ClCompile Include="EsgiShader.cpp" />
+    <ClCompile Include="common\EsgiUtils.cpp">
+      <Filter>Common</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common\cube.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\EsgiFrustum.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\EsgiMesh.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\EsgiTga.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\EsgiTimer.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\vector.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="common\matrix.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Plateforme\Windows\EsgiEGL.h">
+      <Filter>Plateforme\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Plateforme\Windows\EsgiWindows.h">
+      <Filter>Plateforme\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="Plateforme\Windows\EsgiWinExtensions.h">
+      <Filter>Plateforme\Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="EsgiGL.h" />
+    <ClInclude Include="EsgiShader.h" />
+    <ClInclude Include="Libs\GLUT\glut.h">
+      <Filter>Libs\GLUT</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\GL\glext.h">
+      <Filter>Libs\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\GL\wglext.h">
+      <Filter>Libs\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\GLES2\gl2.h">
+      <Filter>Libs\GLES2</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\GLES2\gl2ext.h">
+      <Filter>Libs\GLES2</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\GLES2\gl2platform.h">
+      <Filter>Libs\GLES2</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\EGL\egl.h">
+      <Filter>Libs\EGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\EGL\eglext.h">
+      <Filter>Libs\EGL</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\EGL\eglplatform.h">
+      <Filter>Libs\EGL</Filter>
+    </ClInclude>
+    <ClInclude Include="common\EsgiUtils.h">
+      <Filter>Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Plateforme\EsgiPlateforme.h">
+      <Filter>Plateforme</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Common">
+      <UniqueIdentifier>{4c3cfb80-87ef-4557-91f9-f64f2a6c983a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Plateforme">
+      <UniqueIdentifier>{139bd9a8-17a5-4abb-ae29-2decab0b1d08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Plateforme\Windows">
+      <UniqueIdentifier>{d78be31c-2069-48cd-b54c-5df0aad5bca9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs">
+      <UniqueIdentifier>{2e595627-2c60-4f38-92bb-df8c3cdad6a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\EGL">
+      <UniqueIdentifier>{d58d695a-df06-4a67-9d4f-1066797b4176}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\GLES2">
+      <UniqueIdentifier>{f9232ddf-e797-4c9d-b84d-fe9cbf124ec0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\GL">
+      <UniqueIdentifier>{3bfd1239-be34-4455-861d-00c08c55d6ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Libs\GLUT">
+      <UniqueIdentifier>{dbf2d6de-db3f-46f4-a8ce-125c48bfac21}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
