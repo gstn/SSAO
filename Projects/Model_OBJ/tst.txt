@@ -1,0 +1,25 @@
+int indices[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0};
+				if(sscanf(line.c_str(),"f %i//%i %i//%i %i//%i ",								// Read integers from the line:  f 1 2 3
+					&indices[0],										// First point of our triangle. This is an
+					&indices[6],
+					&indices[1],										// pointer to our vertexBuffer list
+					&indices[7],
+					&indices[2],
+					&indices[8]) <= 1)
+				{
+					if(sscanf(line.c_str(),"f %i/%i/%i %i/%i/%i %i/%i/%i ",								// Read integers from the line:  f 1 2 3
+						&indices[0],							// First point of our triangle. This is an
+						&indices[3],
+						&indices[6],
+						&indices[1],
+						&indices[4],
+						&indices[7],
+						&indices[2],
+						&indices[5],
+						&indices[8]) <= 1)
+					{
+						sscanf(line.c_str(),"f %i %i %i ",								// Read integers from the line:  f 1 2 3
+						&indices[0],										// First point of our triangle. This is an
+						&indices[3],										// pointer to our vertexBuffer list
+						&indices[6] );
+					}
