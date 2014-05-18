@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EsgiGL", "ESGIGL\EsgiGL.vcxproj", "{29E9C2FB-5ED1-4065-B017-F64D3F8111A8}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Model_OBJ", "Projects\Model_OBJ\Model_OBJ.vcxproj", "{1E4C505F-EE60-4D7B-A454-2EC7B61F093A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{29E9C2FB-5ED1-4065-B017-F64D3F8111A8} = {29E9C2FB-5ED1-4065-B017-F64D3F8111A8}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

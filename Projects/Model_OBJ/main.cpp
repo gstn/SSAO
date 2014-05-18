@@ -5,7 +5,7 @@
 
 #include <stdlib.h>
 #include "Model_OBJ.hpp"
-
+#include "SceneLoader.hpp"
 
 struct Light {
     vec3 position;
@@ -17,6 +17,7 @@ struct Light {
  ***************************************************************************/
 
 Model_OBJ obj;
+SceneLoader loader("obj/test.obj");
 EsgiShader shader;
 mat4 projectionMatrix;
 mat4 projectionMatrixP;
@@ -77,9 +78,9 @@ void Draw()
 	
 
 
-	obj.Draw(programObject);
+	//obj.Draw(programObject);
 
-
+	loader.draw(programObject);
 	
 
 }
@@ -106,7 +107,7 @@ bool Setup()
 
 void Update(float elapsedTime)
 {
-	obj.Process(elapsedTime);
+	//obj.Process(elapsedTime);
 }
 void Clean()
 {
@@ -116,6 +117,7 @@ void Clean()
 
 int main(int argc, char *argv[])
 {
+	system("PAUSE");
 	EsgiGLApplication esgi;
     
 	esgi.InitWindowPosition(0, 0);
