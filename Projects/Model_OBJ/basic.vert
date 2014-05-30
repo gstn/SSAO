@@ -1,13 +1,4 @@
-#version 150
-out vec3 N;
-out vec3 v;
-
-
-out vec3 v_Normal;
-out vec3 v_Vertex;
-
-attribute vec4 a_Position;
-attribute vec4 a_Normal;
+#version 330
 
 uniform mat4 u_ProjectionMatrix;
 uniform mat4 u_ModelMatrix;
@@ -16,16 +7,25 @@ uniform mat4 u_ViewMatrix;
 uniform vec3 u_LightPosition;
 uniform vec3 u_LightIntensities;
 
-void main(void)
+in vec4 vertex;
+in vec3 normal;
+in vec4 tangent;
+in vec4 color;
+in vec2 uv;
+
+out vec4 v_color;
+out vec2 v_uv;
+out vec3 v_normal;
+out vec3 v_position;
+out vec3 v_lightPos;
+
+void main()
 {
-
-	//v = vec3(gl_ModelViewMatrix * a_Position);       
-	//N = normalize(gl_NormalMatrix * gl_Normal);
-	v_Normal = a_Normal.xyz;
-	v_Vertex = a_Position.xyz;
-
-	gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
-	//gl_Position = gl_ModelViewProjectionMatrix * a_Position;
-
+	v_lightPos = (u_ViewMatrix *  vec4(u_LightPosition,1)).xyz;
+	v_position = (u_ViewMatrix * u_ModelMatrix * vertex).xyz;
+	gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * vertex;
+	
+	v_color = color;
+	v_uv = uv;
+	v_normal = mat3(u_ViewMatrix * u_ModelMatrix)*normal;
 }
-          

@@ -236,3 +236,7 @@ Projects/Model_OBJ/Debug GL2/Model_OBJ.lastbuildstate
 Projects/Model_OBJ/Debug GL2/CL.write.1.tlog
 Projects/Model_OBJ/Debug GL2/CL.read.1.tlog
 ESGIGL/Libs/EsgiGL2debug.lib
+*.lib
+*.lib
+*.tlog
+ESGIGL/Libs/EsgiGL2debug.lib

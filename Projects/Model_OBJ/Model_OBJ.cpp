@@ -78,12 +78,13 @@ void Model_OBJ::Init(char* filename)
     }
 
 	this->numVertices = this->numFaces * 3;
+	/*
 	std::cout << "Positions : " << this->numPositions << std::endl;
 	std::cout << "Vertices : " << this->numVertices << std::endl;
 	std::cout << "UVs : " << this->numUVs << std::endl;
 	std::cout << "Normals : " << this->numNormals << std::endl;
 	std::cout << "Faces : " << this->numFaces << std::endl;
-
+	*/
 
 	this->numFaces *= 9;
 
@@ -210,7 +211,7 @@ int Model_OBJ::Load(char* filename)
 				facesBuffer[TotalTriangles + 1] = indices[1];										// pointer to our vertexBuffer list
 				facesBuffer[TotalTriangles + 2] = indices[2];
             
-				std::cout << "f (" << facesBuffer[TotalTriangles+0] << "," << facesBuffer[TotalTriangles+1] << "," << facesBuffer[TotalTriangles+2] << ")" << std::endl;
+				//std::cout << "f (" << facesBuffer[TotalTriangles+0] << "," << facesBuffer[TotalTriangles+1] << "," << facesBuffer[TotalTriangles+2] << ")" << std::endl;
 				//std::cout << "ft (" << facesBuffer[TotalTriangles+3] << "," << facesBuffer[TotalTriangles+4] << "," << facesBuffer[TotalTriangles+5] << ")" << std::endl;
 				//std::cout << "fn (" << facesBuffer[TotalTriangles+6] << "," << facesBuffer[TotalTriangles+7] << "," << facesBuffer[TotalTriangles+8] << ")" << std::endl;
 				TotalTriangles += 3;

@@ -5,6 +5,7 @@
 #include <assimp\Importer.hpp>
 #include <assimp\scene.h>
 #include <assimp\postprocess.h>
+#include <fstream>
 
 #include "Mesh.hpp"
 
@@ -15,6 +16,8 @@ class SceneLoader
 	void processMesh(aiMesh * mesh, const aiScene * scene);
 	unsigned int loadTexture(const char * filename);
 public:
+	SceneLoader(){}
+	SceneLoader(Mesh * mesh);
 	SceneLoader(const char * filename);
 	~SceneLoader(void);
 	void draw(unsigned int programId);

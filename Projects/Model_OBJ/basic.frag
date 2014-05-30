@@ -1,36 +1,32 @@
-#version 150
-in vec3 N;
-in vec3 v;
+#version 330
 
-in vec3 v_Normal;
-in vec3 v_Vertex;
+in vec4 v_color;
+in vec2 v_uv;
+in vec3 v_normal;
+in vec3 v_position;
+in vec3 v_lightPos;
 
-uniform mat4 u_ProjectionMatrix;
-uniform mat4 u_ModelMatrix;
-uniform mat4 u_ViewMatrix;
+out vec4 o_color;
 
-uniform vec3 u_LightPosition;
 uniform vec3 u_LightIntensities;
+uniform vec3 u_LightPosition;
 
-out vec4 finalColor;
+void main()
+{	
+	vec3 vInvlightDir =  normalize( v_position - v_lightPos );
+	vec3 E = normalize( -v_position );
+	vec3 R = normalize( -reflect( vInvlightDir, v_normal ) );
 
-void main(void)
-{
-	mat3 normalMatrix = transpose(inverse(mat3(u_ModelMatrix)));
-	vec3 normal = normalize(normalMatrix * v_Normal);
+	//diffuse
+	float diffuse = max( dot( v_normal, vInvlightDir ), 0 );
+	vec3 vdiffuse = vec3(0,0,1) * clamp( diffuse, 0, 1 );
 
-	vec3 fragPosition = vec3(u_ModelMatrix * vec4(v_Vertex,1));
+	//specular
+	float spec = pow( max( dot( R, E ), 0 ), 5 );
+	vec3 vspec = vec3(1) * clamp( spec, 0, 1 );
 
-	vec3 surfaceToLight = u_LightPosition - v_Vertex;
-
-	float brightness = dot(normal, surfaceToLight) / (length(surfaceToLight) * length(normal));
-	brightness = clamp(brightness, 0, 1);
-
-	//finalColor = brightness * vec4(u_LightIntensities, 1.0) * vec4(0.4,0.4,0.4, 1.0);
-	finalColor = vec4(normal,1.0);
-	//vec3 L = normalize(gl_LightSource[0].position.xyz - v);   
-	//vec4 Idiff = gl_FrontLightProduct[0].diffuse * max(dot(N,L), 0.0);  
-	//Idiff = clamp(Idiff, 0.0, 1.0); 
-
-	//gl_FragColor = Idiff;
+	//ambient
+	vec3 vambient = vec3( 0.2 );
+	
+	o_color = vec4( vdiffuse + vspec + vambient, 1 );
 }

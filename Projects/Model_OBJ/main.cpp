@@ -17,7 +17,7 @@ struct Light {
  ***************************************************************************/
 
 Model_OBJ obj;
-SceneLoader loader("obj/test.obj");
+SceneLoader * loader;
 EsgiShader shader;
 mat4 projectionMatrix;
 mat4 projectionMatrixP;
@@ -45,7 +45,7 @@ void Draw()
 	GLuint programObject = shader.GetProgram();
 	glUseProgram(programObject);	
 
-	//view Matrix
+	//View Matrix
 	viewMatrix.Identity();
 	viewMatrix.T.set(0.f, 0.f, -2.f, 1.f);
 
@@ -75,14 +75,9 @@ void Draw()
 	GLint lightIntensitiesUniform = glGetUniformLocation(programObject, "u_LightIntensities");
 	glUniform3fv(lightIntensitiesUniform, 1, &gLight.intensities.x);
 
-	
-
-
 	//obj.Draw(programObject);
 
-	loader.draw(programObject);
-	
-
+	loader->draw(programObject);
 }
 bool Setup()
 {
@@ -92,22 +87,19 @@ bool Setup()
 
 	shader.Create();
 
-	gLight.position = vec3(0.0,0.0,3.0);
+	gLight.position = vec3(0.0,-3.0,-9.0);
 	gLight.intensities = vec3(0.0,1.0,1.0);
 	obj.transform.position = vec3(0.f,0.f,0.0f);
 	obj.transform.rotationSpeed = 90.f;
 	obj.transform.orientation = 0.f;
 
-	//obj.Load("obj/plane.obj");
-	//obj.Load("obj/cube.obj");
-	//obj.Load("obj/monkey.obj");
-	obj.Load("obj/suzanne.obj");
+	//obj.Load("obj/suzanne++.obj");
 	return true;
 }
 
 void Update(float elapsedTime)
 {
-	//obj.Process(elapsedTime);
+	obj.Process(elapsedTime);
 }
 void Clean()
 {
@@ -117,13 +109,14 @@ void Clean()
 
 int main(int argc, char *argv[])
 {
-	system("PAUSE");
 	EsgiGLApplication esgi;
     
 	esgi.InitWindowPosition(0, 0);
 	esgi.InitWindowSize(800, 600);
 	esgi.InitDisplayMode(ESGI_WINDOW_RGBA|ESGI_WINDOW_DOUBLEBUFFER);
 	esgi.CreateWindow("[TEST] Model OBJ ", ESGI_WINDOW_CENTERED);
+
+	loader = new SceneLoader("obj/suzanne.obj");
 	
     esgi.IdleFunc(&Update);
 	esgi.DisplayFunc(&Draw);
@@ -133,5 +126,7 @@ int main(int argc, char *argv[])
 	esgi.CleanFunc(&Clean);
 	esgi.MainLoop();
     
+
+
     return 0;
 }

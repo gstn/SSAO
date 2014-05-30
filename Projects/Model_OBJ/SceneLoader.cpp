@@ -14,9 +14,13 @@ void SceneLoader::recursiveProcess(aiNode * node, const aiScene * scene) {
 	}
 }
 
+SceneLoader::SceneLoader(Mesh * mesh) {
+	meshes.push_back(mesh);
+}
+
 void SceneLoader::processMesh(aiMesh * mesh, const aiScene * scene) {
 	std::vector<vertexData> data;
-	std::vector<unsigned int> indices;
+	std::vector<unsigned short> indices;
 	std::vector<textureData> textures;
 
 	for(int i = 0; i < mesh->mNumVertices; ++i) {
@@ -93,7 +97,7 @@ unsigned int SceneLoader::loadTexture(const char * filename) {
 
 SceneLoader::SceneLoader(const char * filename) {
 	Assimp::Importer importer;
-	const aiScene * scene = importer.ReadFile(filename, aiProcess_CalcTangentSpace |  aiProcess_GenNormals | aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_SortByPType | aiProcess_FlipUVs | 0);
+	const aiScene * scene = importer.ReadFile(filename, aiProcess_CalcTangentSpace |  aiProcess_GenSmoothNormals |aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_SortByPType | aiProcess_FlipUVs | 0);
 	if(!scene) {
 		std::cout << "Error opening " << filename << std::endl;
 		return;
