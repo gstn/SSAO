@@ -24,6 +24,7 @@ void main(void)
 	v_Normal = a_Normal.xyz;
 	v_Vertex = a_Position.xyz;
 
+	//gl_PointSize = a_Position.z * 2.0f + 2.0f;
 	gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
 	//gl_Position = gl_ModelViewProjectionMatrix * a_Position;
 

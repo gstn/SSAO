@@ -72,6 +72,9 @@ class Model_OBJ
 	unsigned int* facesBuffer;
 	unsigned int* normalsIndexesBuffer;
 	unsigned int* uvsIndexesBuffer;
+	std::vector<float> vertices;
+	std::vector<unsigned short> indicesTri;
+	std::vector<float> normalsBuf;
 
 	int numPositions;
 	int numVertices;

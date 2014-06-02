@@ -58,6 +58,9 @@ vec3 Model_OBJ::calculateNormal( vec3 coord1, vec3 coord2, vec3 coord3 )
 void Model_OBJ::Init(char* filename)
 {
 	string line;
+
+	
+
 	ifstream objFile (filename);
 	while(!objFile.eof())
     {
@@ -97,6 +100,9 @@ int Model_OBJ::Load(char* filename)
 	this->Init(filename);
 	string line;
 	ifstream objFile (filename);
+	ofstream myfile;
+	myfile.open ("debug_faces.txt");
+	std::cout << myfile.is_open() << std::endl;
 	if (objFile.is_open())													// If obj file is open, continue
 	{
 		objFile.seekg (0, ios::end);										// Go to end of the file,
@@ -134,7 +140,12 @@ int Model_OBJ::Load(char* filename)
 					&verticesBuffer[TotalPoints],
 					&verticesBuffer[TotalPoints+1],
 					&verticesBuffer[TotalPoints+2]);
-				//std::cout << "v (" << verticesBuffer[TotalPoints+0] << "," << verticesBuffer[TotalPoints+1] << "," << verticesBuffer[TotalPoints+2] << ")" << std::endl;
+				vertices.push_back(verticesBuffer[TotalPoints]);
+				vertices.push_back(verticesBuffer[TotalPoints+1]);
+				vertices.push_back(verticesBuffer[TotalPoints+2]);
+
+
+				myfile << "v (" << verticesBuffer[TotalPoints+0] << "," << verticesBuffer[TotalPoints+1] << "," << verticesBuffer[TotalPoints+2] << ")" << std::endl;
 				
 				TotalConnectedPoints += POINTS_PER_VERTEX;					// Add 3 to the total connected points
 				TotalPoints += POINTS_PER_VERTEX;					// Add 3 to the total connected points
@@ -148,7 +159,7 @@ int Model_OBJ::Load(char* filename)
 					&normalsBuffer[TotalNormalPoints],
 					&normalsBuffer[TotalNormalPoints+1],
 					&normalsBuffer[TotalNormalPoints+2]);
-				//std::cout << "vn (" << normalsBuffer[TotalNormalPoints+0] << "," << normalsBuffer[TotalNormalPoints+1] << "," << normalsBuffer[TotalNormalPoints+2] << ")" << std::endl;
+				//myfile << "vn (" << normalsBuffer[TotalNormalPoints+0] << "," << normalsBuffer[TotalNormalPoints+1] << "," << normalsBuffer[TotalNormalPoints+2] << ")" << std::endl;
 				
 				//vertexBuffer[TotalConnectedPoints] *= 0.5f;
 				//vertexBuffer[TotalConnectedPoints+1] *= 0.5f;
@@ -175,42 +186,43 @@ int Model_OBJ::Load(char* filename)
 			if (line.c_str()[0] == 'f')										// The first character is an 'f': on this line is a point stored
 			{
 
-				int indices[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0};
+				int ind[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0};
 				if(sscanf(line.c_str(),"f %i//%i %i//%i %i//%i ",								// Read integers from the line:  f 1 2 3
-					&indices[0],										// First point of our triangle. This is an
-					&indices[6],
-					&indices[1],										// pointer to our vertexBuffer list
-					&indices[7],
-					&indices[2],
-					&indices[8]) <= 1)
+					&ind[0],										// First point of our triangle. This is an
+					&ind[6],
+					&ind[1],										// pointer to our vertexBuffer list
+					&ind[7],
+					&ind[2],
+					&ind[8]) <= 1)
 				{
 					if(sscanf(line.c_str(),"f %i/%i/%i %i/%i/%i %i/%i/%i ",								// Read integers from the line:  f 1 2 3
-						&indices[0],							// First point of our triangle. This is an
-						&indices[3],
-						&indices[6],
-						&indices[1],
-						&indices[4],
-						&indices[7],
-						&indices[2],
-						&indices[5],
-						&indices[8]) <= 1)
+						&ind[0],							// First point of our triangle. This is an
+						&ind[3],
+						&ind[6],
+						&ind[1],
+						&ind[4],
+						&ind[7],
+						&ind[2],
+						&ind[5],
+						&ind[8]) <= 1)
 					{
 						sscanf(line.c_str(),"f %i %i %i ",								// Read integers from the line:  f 1 2 3
-						&indices[0],										// First point of our triangle. This is an
-						&indices[3],										// pointer to our vertexBuffer list
-						&indices[6] );
+						&ind[0],										// First point of our triangle. This is an
+						&ind[3],										// pointer to our vertexBuffer list
+						&ind[6] );
 					}
 				}
 				for(int i = 0; i < 9 ; i++)
 				{
-					indices[i]-=1;
+					ind[i]-=1;
 				}
-
-				facesBuffer[TotalTriangles + 0] = indices[0];										// First point of our triangle. This is an
-				facesBuffer[TotalTriangles + 1] = indices[1];										// pointer to our vertexBuffer list
-				facesBuffer[TotalTriangles + 2] = indices[2];
-            
-				std::cout << "f (" << facesBuffer[TotalTriangles+0] << "," << facesBuffer[TotalTriangles+1] << "," << facesBuffer[TotalTriangles+2] << ")" << std::endl;
+				indicesTri.push_back(ind[0]);
+				indicesTri.push_back(ind[1]);
+				indicesTri.push_back(ind[2]);
+				facesBuffer[TotalTriangles + 0] = ind[0];										// First point of our triangle. This is an
+				facesBuffer[TotalTriangles + 1] = ind[1];										// pointer to our vertexBuffer list
+				facesBuffer[TotalTriangles + 2] = ind[2];
+				myfile << "f (" << facesBuffer[TotalTriangles+0] << "," << facesBuffer[TotalTriangles+1] << "," << facesBuffer[TotalTriangles+2] << ")" << std::endl;
 				//std::cout << "ft (" << facesBuffer[TotalTriangles+3] << "," << facesBuffer[TotalTriangles+4] << "," << facesBuffer[TotalTriangles+5] << ")" << std::endl;
 				//std::cout << "fn (" << facesBuffer[TotalTriangles+6] << "," << facesBuffer[TotalTriangles+7] << "," << facesBuffer[TotalTriangles+8] << ")" << std::endl;
 				TotalTriangles += 3;
@@ -265,7 +277,7 @@ int Model_OBJ::Load(char* filename)
 					Faces_Triangles[triangle_index + tCounter   ] = vertexBuffer[3*vertexNumber[i] ];
 					Faces_Triangles[triangle_index + tCounter +1 ] = vertexBuffer[3*vertexNumber[i]+1 ];
 					Faces_Triangles[triangle_index + tCounter +2 ] = vertexBuffer[3*vertexNumber[i]+2 ];
-					//std::cout << "(" << Faces_Triangles[triangle_index + tCounter   ] << "," << Faces_Triangles[triangle_index + tCounter + 1] << "," << Faces_Triangles[triangle_index + tCounter + 2 ] << ")" << std::endl; 
+					myfile << "(" << Faces_Triangles[triangle_index + tCounter   ] << "," << Faces_Triangles[triangle_index + tCounter + 1] << "," << Faces_Triangles[triangle_index + tCounter + 2 ] << ")" << std::endl; 
 					tCounter += POINTS_PER_VERTEX;
 				}
 
@@ -326,33 +338,32 @@ void Model_OBJ::Draw( GLuint programObject)
 
 	GLint position_attribute = 0;
 	GLint normal_attribute = 0;
-			unsigned int toto[36] = {	0,6,4,
-								0,2,6,
-								0,3,2,
-								0,1,3,
-								2,7,6,
-								2,3,7,
-								4,6,7,
-								4,7,5,
-								0,4,5,
-								0,5,1,
-								1,5,7,
-								1,7,3};
-	
 
 	position_attribute = glGetAttribLocation(programObject, "a_Position");
-
-	//glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_TRUE, 0, Faces_Triangles);
-	glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_TRUE, 0, verticesBuffer);
 	glEnableVertexAttribArray(position_attribute);
-
-	normal_attribute = glGetAttribLocation(programObject, "a_Normal");
-	glVertexAttribPointer(normal_attribute, 3, GL_FLOAT, GL_FALSE, 0, normalsBuffer);
+	//glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_TRUE, 0, Faces_Triangles);
+	glVertexAttribPointer(position_attribute, 3, GL_FLOAT, GL_TRUE, 0, this->verticesBuffer);
+	
 	glEnableVertexAttribArray(normal_attribute);
+	normal_attribute = glGetAttribLocation(programObject, "a_Normal");
+	glVertexAttribPointer(normal_attribute, 3, GL_FLOAT, GL_FALSE, 0, this->normalsBuffer);
+	
 	//glNormalPointer(GL_FLOAT, 0, normals);
 	//glDrawArrays(GL_TRIANGLES, 0, TotalConnectedTriangles);
-	glDrawElements(GL_TRIANGLES,this->TotalTriangles, GL_UNSIGNED_SHORT, this->facesBuffer);
-
+	//glDrawElements(GL_TRIANGLES,36*sizeof(unsigned short), GL_UNSIGNED_SHORT, this->facesBuffer);
+	GLuint elementbuffer;
+	glGenBuffers(1, &elementbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, elementbuffer);
+	glBufferData(GL_ARRAY_BUFFER, 256 * sizeof(unsigned short), &indicesTri[0], GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, elementbuffer);
+ 
+	// Draw the triangles !
+	glDrawElements(
+		GL_TRIANGLES,      // mode
+		256 * sizeof(unsigned short),    // count
+		GL_UNSIGNED_SHORT,   // type
+		(void*)0           // element array buffer offset
+	);
 	glDisableVertexAttribArray(position_attribute);
 	glDisableVertexAttribArray(normal_attribute);
 }
