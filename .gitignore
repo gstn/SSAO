@@ -249,3 +249,4 @@ ESGIGL/Libs/EsgiGL2debug.lib
 *.vcxproj
 *.idb
 *.exe
+*.lib

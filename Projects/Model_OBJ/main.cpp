@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include "Model_OBJ.hpp"
 #include "SceneLoader.hpp"
-#include "Camera.hpp"
 #define WIDTH 800.0f
 #define HEIGHT 600.0f
 
@@ -42,24 +41,23 @@ unsigned int renderTexture,renderTexture2,depthTexture;
 int blurIntensity = 20;
 
 
-unsigned int createTexture(int w,int h,bool isDepth=false)
+unsigned int createTexture(int w,int h,bool isDepth = false)
 {
 	unsigned int textureId;
-	glGenTextures(1,&textureId);
-	glBindTexture(GL_TEXTURE_2D,textureId);
-	glTexImage2D(GL_TEXTURE_2D,0,(!isDepth ? GL_RGBA8 : GL_DEPTH_COMPONENT),w,h,0,isDepth ? GL_DEPTH_COMPONENT : GL_RGBA,GL_FLOAT,NULL);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	glTexImage2D(GL_TEXTURE_2D, 0, isDepth ? GL_DEPTH_COMPONENT : GL_RGBA8, w, h, 0, isDepth ? GL_DEPTH_COMPONENT : GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	
-	int i;
-	i=glGetError();
-	if(i!=0)
-	{
+	int i = glGetError();
+	if(i != 0) {
 		std::cout << "Error happened while loading the texture: " << i << std::endl;
 	}
-	glBindTexture(GL_TEXTURE_2D,0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 	return textureId;
 }
 
@@ -110,7 +108,10 @@ void Draw()
 	//Blur
 	programObject = blurShader.GetProgram();
 	glUseProgram(programObject);
+
 	glDisable(GL_DEPTH_TEST);
+	glActiveTexture(GL_TEXTURE0);
+	bool ping = true;
 
 	world.Identity();
 	viewMatrix.Identity();
@@ -118,6 +119,25 @@ void Draw()
 	modelMatrix = esgiMultiplyMatrix(viewMatrix, world);
 	projectionMatrixP = esgiOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 
+	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
+	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+	
+	for (int i = 0; i < blurIntensity; ++i) {
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+		glActiveTexture(GL_TEXTURE0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ping ? renderTexture2 : renderTexture, 0);
+		glBindTexture(GL_TEXTURE_2D, ping ? renderTexture : renderTexture2);
+
+		glUniform1i(glGetUniformLocation(programObject, "isVertical"), (int)ping);
+
+		quad->draw(programObject);
+
+		ping = !ping;
+	}
+	
 
 	//Render to quad----------------------------------
 	programObject = quadShader.GetProgram();
@@ -126,7 +146,7 @@ void Draw()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//glClear(GL_COLOR_BUFFER_BIT);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderTexture);
+	glBindTexture(GL_TEXTURE_2D, ping ? renderTexture : renderTexture2);
 	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
 	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
@@ -139,14 +159,16 @@ void Draw()
 
 bool Setup()
 {
-	// charge les vertex/fragment shaders
+	//load the scene
+	loader = new SceneLoader("obj/courtyard.obj");
+
 	//basic diffuse-ambient-spec shader
 	shader.LoadVertexShader("basic.vert");
 	shader.LoadFragmentShader("basic.frag");
 	shader.Create();
 	
 	//blur shader
-	blurShader.LoadVertexShader("quadRender.vert");
+	blurShader.LoadVertexShader("basic.vert");
 	blurShader.LoadFragmentShader("blur.frag");
 	blurShader.Create();
 
@@ -161,25 +183,20 @@ bool Setup()
 	obj.transform.rotationSpeed = 90.f;
 	obj.transform.orientation = 0.f;
 
-	renderTexture=createTexture(WIDTH, HEIGHT);
-	renderTexture2=createTexture(WIDTH, HEIGHT);
-	depthTexture=createTexture(WIDTH, HEIGHT, true);
+	renderTexture = createTexture(WIDTH, HEIGHT);
+	renderTexture2 = createTexture(WIDTH, HEIGHT);
+	depthTexture = createTexture(WIDTH, HEIGHT, true);
 	glGenFramebuffers(1,&FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER,FBO);
-	//GL_COLOR_ATTACHMENT0
-	//GL_DEPTH_ATTACHMENT
 	glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,renderTexture,0);
-
 	glFramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,depthTexture,0);
 
-
 	int i=glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if(i!=GL_FRAMEBUFFER_COMPLETE)
-	{
+
+	if(i!=GL_FRAMEBUFFER_COMPLETE) {
 		std::cout << "Framebuffer is not OK, status=" << i << std::endl;
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER,0);
-	
 	
 	//create the quad here
 	{
@@ -247,8 +264,6 @@ int main(int argc, char *argv[])
 	//esgi.KeyboardFunction();
 	//esgi.MouseFunction();
 
-	loader = new SceneLoader("obj/courtyard.obj");
-	
     esgi.IdleFunc(&Update);
 	esgi.DisplayFunc(&Draw);
     esgi.InitFunc(&Setup);

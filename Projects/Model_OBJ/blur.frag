@@ -1,4 +1,4 @@
-uniform vec2 pixelSize;
+uniform vec3 pixelSize;
 uniform sampler2D texture;
 uniform int isVertical;
 
@@ -6,11 +6,7 @@ void main()
 {
 	vec4 result;
 	vec2 pos = gl_FragCoord.xy * pixelSize;
-	
-	// 1 2 1
-	// 2 3 2  / 15.0
-	// 1 2 1
-	
+
 	float values[9];
 	values[0] = 0.05;
 	values[1] = 0.09;
@@ -22,21 +18,21 @@ void main()
 	values[7] = 0.09;
 	values[8] = 0.05;
 	
-	if(isVertical==1) {
+	if(isVertical) {
 
 		vec2 curSamplePos = vec2(pos.x,pos.y - 4.0 * pixelSize.y);
 		for(int i=0;i<9;i++) {
-			result+=texture2D(texture,curSamplePos)*values[i];
+			result += texture2D(texture,curSamplePos) * values[i];
 			curSamplePos.y += pixelSize.y;
 		}
 	} else {
 
 		vec2 curSamplePos = vec2(pos.x - 4.0 * pixelSize.x, pos.y);
 		for(int i=0;i<9;i++) {
-			result+=texture2D(texture,curSamplePos)*values[i];
+			result += texture2D(texture,curSamplePos) * values[i];
 			curSamplePos.x += pixelSize.x;
 		}
 	}
 
-	gl_FragColor=vec4(result.xyz,1.0);
+	gl_FragColor = vec4(result.xyz, 1.0);
 }
