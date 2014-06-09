@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include "Model_OBJ.hpp"
 #include "SceneLoader.hpp"
+#include "Camera.hpp"
+#define WIDTH 800.0f
+#define HEIGHT 600.0f
 
 struct Light {
     vec3 position;
@@ -18,7 +21,10 @@ struct Light {
 
 Model_OBJ obj;
 SceneLoader * loader;
+Mesh * quad;
 EsgiShader shader;
+EsgiShader blurShader;
+EsgiShader quadShader;
 mat4 projectionMatrix;
 mat4 projectionMatrixP;
 mat4 viewMatrix;
@@ -30,11 +36,36 @@ double a=0;
 int MatSpec [4] = {1,1,1,1};
 int LightPos[4] = {0,0,3,1};
 
+unsigned int FBO;
+unsigned int renderTexture,renderTexture2,depthTexture;
+
+int blurIntensity = 20;
 
 
+unsigned int createTexture(int w,int h,bool isDepth=false)
+{
+	unsigned int textureId;
+	glGenTextures(1,&textureId);
+	glBindTexture(GL_TEXTURE_2D,textureId);
+	glTexImage2D(GL_TEXTURE_2D,0,(!isDepth ? GL_RGBA8 : GL_DEPTH_COMPONENT),w,h,0,isDepth ? GL_DEPTH_COMPONENT : GL_RGBA,GL_FLOAT,NULL);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
+	
+	int i;
+	i=glGetError();
+	if(i!=0)
+	{
+		std::cout << "Error happened while loading the texture: " << i << std::endl;
+	}
+	glBindTexture(GL_TEXTURE_2D,0);
+	return textureId;
+}
 
 void Draw()
 {
+	//Render to color and depth buffer--------------
 	glClearColor(0.95f, 0.95f, 0.95f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
@@ -43,55 +74,148 @@ void Draw()
 	glEnable(GL_BLEND);
 
 	GLuint programObject = shader.GetProgram();
-	glUseProgram(programObject);	
+	glUseProgram(programObject);
 
 	//View Matrix
 	viewMatrix.Identity();
-	viewMatrix.T.set(0.f, 0.f, -2.f, 1.f);
-
-	GLint viewUniform = glGetUniformLocation(programObject, "u_ViewMatrix");
-	glUniformMatrix4fv(viewUniform, 1, 0, &viewMatrix.I.x);
+	viewMatrix.T.set(0.f, -0.5f, -2.f, 1.f);
 
 	//Projection Matrix
-	projectionMatrix = esgiOrtho(0.f, 800.f, 0.f, 600.f, 0.f, 1.f);	
+	projectionMatrix = esgiOrtho(0.f, WIDTH, 0.f, HEIGHT, 0.f, 1.f);	
 	projectionMatrixP = esgiPerspective(45.f, 4.f/3.f, 0.1f, 500.f);
-
-	GLint projectionUniform = glGetUniformLocation(programObject, "u_ProjectionMatrix");
-	glUniformMatrix4fv(projectionUniform, 1, 0, &projectionMatrixP.I.x);
 
 	//ModelView Matrix
 	// tourne autour de l'axe Y du monde
 	mat4 world = esgiRotateY(obj.transform.orientation);
 	world.T.set(0.f, 0.f, 0.f, 1.f);
 
-    GLint modelUniform = glGetUniformLocation(programObject, "u_ModelMatrix");
 	mat4 modelMatrix = esgiMultiplyMatrix(viewMatrix, world);
-	glUniformMatrix4fv(modelUniform, 1, 0, &modelMatrix.I.x);
-	
-	//Light
-	GLint lightPositionUniform = glGetUniformLocation(programObject, "u_LightPosition");
-	glUniform3fv(lightPositionUniform, 1, &gLight.position.x);
 
-	GLint lightIntensitiesUniform = glGetUniformLocation(programObject, "u_LightIntensities");
-	glUniform3fv(lightIntensitiesUniform, 1, &gLight.intensities.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 
-	//obj.Draw(programObject);
+	glUniform3fv(glGetUniformLocation(programObject, "u_LightPosition"), 1, &gLight.position.x);
+	glUniform3fv(glGetUniformLocation(programObject, "u_LightIntensities"), 1, &gLight.intensities.x);
 
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	loader->draw(programObject);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	loader->draw(programObject);
+
+	//Blur
+	programObject = blurShader.GetProgram();
+	glUseProgram(programObject);
+	glDisable(GL_DEPTH_TEST);
+
+	world.Identity();
+	viewMatrix.Identity();
+	viewMatrix.T.set(0.f, 0.f, 0.f, 0.f);
+	modelMatrix = esgiMultiplyMatrix(viewMatrix, world);
+	projectionMatrixP = esgiOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+
+
+	//Render to quad----------------------------------
+	programObject = quadShader.GetProgram();
+	glUseProgram(programObject);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//glClear(GL_COLOR_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, renderTexture);
+	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
+	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+
+	quad->draw(programObject);
+	
 }
+
 bool Setup()
 {
 	// charge les vertex/fragment shaders
+	//basic diffuse-ambient-spec shader
 	shader.LoadVertexShader("basic.vert");
 	shader.LoadFragmentShader("basic.frag");
-
 	shader.Create();
+	
+	//blur shader
+	blurShader.LoadVertexShader("quadRender.vert");
+	blurShader.LoadFragmentShader("blur.frag");
+	blurShader.Create();
 
+	//quadShader
+	quadShader.LoadVertexShader("basic.vert");
+	quadShader.LoadFragmentShader("quadRender.frag");
+	quadShader.Create();
+	
 	gLight.position = vec3(0.0,-3.0,-9.0);
 	gLight.intensities = vec3(0.0,1.0,1.0);
 	obj.transform.position = vec3(0.f,0.f,0.0f);
 	obj.transform.rotationSpeed = 90.f;
 	obj.transform.orientation = 0.f;
+
+	renderTexture=createTexture(WIDTH, HEIGHT);
+	renderTexture2=createTexture(WIDTH, HEIGHT);
+	depthTexture=createTexture(WIDTH, HEIGHT, true);
+	glGenFramebuffers(1,&FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER,FBO);
+	//GL_COLOR_ATTACHMENT0
+	//GL_DEPTH_ATTACHMENT
+	glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,renderTexture,0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,depthTexture,0);
+
+
+	int i=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if(i!=GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Framebuffer is not OK, status=" << i << std::endl;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	
+	
+	//create the quad here
+	{
+		std::vector<unsigned short> indices;
+		std::vector<vertexData> vertices;
+		vertexData tmp;
+		//1.
+		tmp.position = vec3(-1.0,1.0,0.0);
+		tmp.u=0;
+		tmp.v=1;
+		vertices.push_back(tmp);
+		//2.
+		tmp.position = vec3(-1.0,-1.0,0.0);
+		tmp.u=0;
+		tmp.v=0;
+		vertices.push_back(tmp);
+		//3.
+		tmp.position = vec3(0.0,-1.0,0.0);
+		tmp.u=0.5;
+		tmp.v=0;
+		vertices.push_back(tmp);
+		//4.
+		tmp.position = vec3(0.0,1.0,0.0);
+		tmp.u=0.5;
+		tmp.v=1;
+		vertices.push_back(tmp);
+		
+		indices.push_back(0);
+		indices.push_back(1);
+		indices.push_back(2);		
+		
+		indices.push_back(0);
+		indices.push_back(2);
+		indices.push_back(3);
+		quad = new Mesh(&vertices, &indices);
+	}
 
 	//obj.Load("obj/suzanne++.obj");
 	return true;
@@ -101,9 +225,14 @@ void Update(float elapsedTime)
 {
 	obj.Process(elapsedTime);
 }
+
 void Clean()
 {
 	shader.Destroy();
+	blurShader.Destroy();
+	quadShader.Destroy();
+	delete quad;
+	delete loader;
 }
 
 
@@ -112,11 +241,13 @@ int main(int argc, char *argv[])
 	EsgiGLApplication esgi;
     
 	esgi.InitWindowPosition(0, 0);
-	esgi.InitWindowSize(800, 600);
+	esgi.InitWindowSize(WIDTH, HEIGHT);
 	esgi.InitDisplayMode(ESGI_WINDOW_RGBA|ESGI_WINDOW_DOUBLEBUFFER);
 	esgi.CreateWindow("[TEST] Model OBJ ", ESGI_WINDOW_CENTERED);
+	//esgi.KeyboardFunction();
+	//esgi.MouseFunction();
 
-	loader = new SceneLoader("obj/suzanne.obj");
+	loader = new SceneLoader("obj/courtyard.obj");
 	
     esgi.IdleFunc(&Update);
 	esgi.DisplayFunc(&Draw);
@@ -126,7 +257,5 @@ int main(int argc, char *argv[])
 	esgi.CleanFunc(&Clean);
 	esgi.MainLoop();
     
-
-
     return 0;
 }

@@ -87,7 +87,7 @@ EsgiGLApplication::EsgiGLApplication() :
     m_DrawFunc = NULL;
     m_UpdateFunc = NULL;
     m_KeyFunc = NULL;
-
+	m_MouseFunc = NULL;
 }
 
 EsgiGLApplication::~EsgiGLApplication()
@@ -171,7 +171,9 @@ void EsgiGLApplication::HandleInputs(unsigned int key, int mousex, int mousey)
 
 		m_KeyFunc(key);
 	}
-	//m_MouseFunc(mousex, mousey);
+	if(m_MouseFunc) {
+		m_MouseFunc(mousex, mousey);
+	}
 }
 
 bool EsgiGLApplication::Init()
@@ -220,7 +222,6 @@ void EsgiGLApplication::Render()
 	m_DrawFunc();
 
 #if 0
-
 	// post render
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glUseProgram(0);
@@ -254,9 +255,7 @@ void EsgiGLApplication::Render()
 	glLoadIdentity();
 	glColor4f(1.f, 1.f, 1.f, 1.f);
 #endif
-
 #endif
-
 	SwapBuffers();
 }
 

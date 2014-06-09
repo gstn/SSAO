@@ -128,6 +128,7 @@ public:
 	void DebugDisplayFunc(void (*drawFunc)())					{ m_DebugDrawFunc = drawFunc; }
 	void IdleFunc(void (*updateFunc)(float))					{ m_UpdateFunc = updateFunc; }
 	void KeyboardFunction(void (*keyFunc)(unsigned int))		{ m_KeyFunc = keyFunc; }
+	void MouseFunction(void (*mouseFunc)(int, int))				{ m_MouseFunc = mouseFunc; }
 
 	// Utils ---
 
@@ -170,6 +171,7 @@ protected:
 	void (*m_DebugDrawFunc)();
 	void (*m_UpdateFunc)( float deltaTime );
 	void (*m_KeyFunc)( unsigned int );
+	void (*m_MouseFunc)( int, int);
 	//void (*m_KeySpecialFunc)( unsigned char );
 
 private:

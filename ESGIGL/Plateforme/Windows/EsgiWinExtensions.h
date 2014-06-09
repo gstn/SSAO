@@ -10,7 +10,7 @@
 
 // --- Includes --------------------------------------------------------------
 
-//#define ESGI_GLUT
+#define ESGI_GLUT
 
 #ifdef ESGI_GLUT
 #include "GLUT/glut.h"

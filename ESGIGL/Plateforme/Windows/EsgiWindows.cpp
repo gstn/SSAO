@@ -37,6 +37,7 @@ void ESGI_PRINTSCREEN(int x, int y, const char *format, ...)
 {
 	char buffer[512];
 	
+#ifdef ESGI_GLUT
 	// Formatage du message dans une chaine de caractere
 	va_list vaParams;
 	va_start(vaParams, format);
@@ -45,7 +46,6 @@ void ESGI_PRINTSCREEN(int x, int y, const char *format, ...)
 	
 	//::OutputDebugString(buffer);
 
-#ifdef ESGI_GLUT
 	int len;
 	glRasterPos2i(x, y);
 	len = (int)strlen(buffer);

@@ -240,3 +240,12 @@ ESGIGL/Libs/EsgiGL2debug.lib
 *.lib
 *.tlog
 ESGIGL/Libs/EsgiGL2debug.lib
+*.lib
+*.tlog
+*.rar
+*.txt
+*.exe
+*.filters
+*.vcxproj
+*.idb
+*.exe

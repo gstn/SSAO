@@ -19,11 +19,11 @@ void main()
 
 	//diffuse
 	float diffuse = max( dot( v_normal, vInvlightDir ), 0 );
-	vec3 vdiffuse = vec3(0,0,1) * clamp( diffuse, 0, 1 );
+	vec3 vdiffuse = vec3(.8) * clamp( diffuse, 0, 1 );
 
 	//specular
 	float spec = pow( max( dot( R, E ), 0 ), 5 );
-	vec3 vspec = vec3(1) * clamp( spec, 0, 1 );
+	vec3 vspec = vec3(.1) * clamp( spec, 0, 1 );
 
 	//ambient
 	vec3 vambient = vec3( 0.2 );
