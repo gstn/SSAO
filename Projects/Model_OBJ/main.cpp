@@ -2,6 +2,7 @@
 #include "../../EsgiGL/EsgiShader.h"
 #include "../../EsgiGL/Common/EsgiTGA.h"
 #include "../../EsgiGL/Common/matrix.h"
+#include "ssaoUtils.hpp"
 
 #include <stdlib.h>
 #include "Model_OBJ.hpp"
@@ -24,6 +25,7 @@ Mesh * quad;
 EsgiShader shader;
 EsgiShader blurShader;
 EsgiShader quadShader;
+EsgiShader ssaoShader;
 mat4 projectionMatrix;
 mat4 projectionMatrixP;
 mat4 viewMatrix;
@@ -36,9 +38,9 @@ int MatSpec [4] = {1,1,1,1};
 int LightPos[4] = {0,0,3,1};
 
 unsigned int FBO;
-unsigned int renderTexture,renderTexture2,depthTexture;
+unsigned int renderTexture, renderTexture2, depthTexture, kernelTexture, rotationTexture;
 
-int blurIntensity = 20;
+int blurIntensity = 4;
 
 
 unsigned int createTexture(int w,int h,bool isDepth = false)
@@ -105,25 +107,25 @@ void Draw()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	loader->draw(programObject);
 
+	//ssao
+	glDisable(GL_DEPTH_TEST);
+	programObject = ssaoShader.GetProgram();
+	glUseProgram(programObject);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+	
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, depthTexture);
+	
+	quad->draw(programObject);
+
 	//Blur
 	programObject = blurShader.GetProgram();
 	glUseProgram(programObject);
 
-	glDisable(GL_DEPTH_TEST);
 	glActiveTexture(GL_TEXTURE0);
 	bool ping = true;
-
-	world.Identity();
-	viewMatrix.Identity();
-	viewMatrix.T.set(0.f, 0.f, 0.f, 0.f);
-	modelMatrix = esgiMultiplyMatrix(viewMatrix, world);
-	projectionMatrixP = esgiOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
-
-	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
-	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	
 	for (int i = 0; i < blurIntensity; ++i) {
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
@@ -138,7 +140,6 @@ void Draw()
 		ping = !ping;
 	}
 	
-
 	//Render to quad----------------------------------
 	programObject = quadShader.GetProgram();
 	glUseProgram(programObject);
@@ -147,20 +148,18 @@ void Draw()
 	//glClear(GL_COLOR_BUFFER_BIT);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, ping ? renderTexture : renderTexture2);
-	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
-	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 
 	quad->draw(programObject);
-	
 }
 
 bool Setup()
 {
 	//load the scene
-	loader = new SceneLoader("obj/courtyard.obj");
+	loader = new SceneLoader("obj/courtyard++.obj");
+
+	//init kernel and noise
+	initKernel();
+	initNoiseTexture();
 
 	//basic diffuse-ambient-spec shader
 	shader.LoadVertexShader("basic.vert");
@@ -176,6 +175,11 @@ bool Setup()
 	quadShader.LoadVertexShader("basic.vert");
 	quadShader.LoadFragmentShader("quadRender.frag");
 	quadShader.Create();
+
+	//ssao shader
+	ssaoShader.LoadVertexShader("basic.vert");
+	ssaoShader.LoadFragmentShader("ssao.frag");
+	ssaoShader.Create();
 	
 	gLight.position = vec3(0.0,-3.0,-9.0);
 	gLight.intensities = vec3(0.0,1.0,1.0);
@@ -186,17 +190,20 @@ bool Setup()
 	renderTexture = createTexture(WIDTH, HEIGHT);
 	renderTexture2 = createTexture(WIDTH, HEIGHT);
 	depthTexture = createTexture(WIDTH, HEIGHT, true);
+	rotationTexture = createTexture(WIDTH, HEIGHT);
+
 	glGenFramebuffers(1,&FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER,FBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,renderTexture,0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,depthTexture,0);
 
-	int i=glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+
+	int i = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
 	if(i!=GL_FRAMEBUFFER_COMPLETE) {
 		std::cout << "Framebuffer is not OK, status=" << i << std::endl;
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER,0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	//create the quad here
 	{
@@ -214,12 +221,12 @@ bool Setup()
 		tmp.v=0;
 		vertices.push_back(tmp);
 		//3.
-		tmp.position = vec3(0.0,-1.0,0.0);
+		tmp.position = vec3(0.0f,-1.0,0.0);
 		tmp.u=0.5;
 		tmp.v=0;
 		vertices.push_back(tmp);
 		//4.
-		tmp.position = vec3(0.0,1.0,0.0);
+		tmp.position = vec3(0.0f,1.0,0.0);
 		tmp.u=0.5;
 		tmp.v=1;
 		vertices.push_back(tmp);
@@ -234,7 +241,48 @@ bool Setup()
 		quad = new Mesh(&vertices, &indices);
 	}
 
-	//obj.Load("obj/suzanne++.obj");
+	//init quad position
+	mat4 world;
+	mat4 modelMatrix;
+	mat4 viewMatrix;
+	mat4 projectionMatrix;
+
+	world.Identity();
+	viewMatrix.Identity();
+	viewMatrix.T.set(0.f, 0.f, 0.f, -1.f);
+	modelMatrix = esgiMultiplyMatrix(viewMatrix, world);
+	projectionMatrixP = esgiOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+
+	GLuint programObject = blurShader.GetProgram();
+	glUseProgram(programObject);
+	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
+	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+
+	programObject = quadShader.GetProgram();
+	glUseProgram(programObject);
+	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
+	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+
+	programObject = ssaoShader.GetProgram();
+	glUseProgram(programObject);
+	glUniform1i(glGetUniformLocation(programObject, "u_depthTexture"), 0);
+	//glUniform1i(glGetUniformLocation(programObject, "u_kernelTexture"), 1);
+	glUniform1i(glGetUniformLocation(programObject, "u_rotationTexture"), 2);
+	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+	glUniform1i(glGetUniformLocation(programObject, "u_kernelSize"), kernelSize);
+	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), kernelSize, kernel);
+	
+	//obj.Load("obj/courtyard++.obj");
 	return true;
 }
 
@@ -248,6 +296,7 @@ void Clean()
 	shader.Destroy();
 	blurShader.Destroy();
 	quadShader.Destroy();
+	ssaoShader.Destroy();
 	delete quad;
 	delete loader;
 }
@@ -260,7 +309,7 @@ int main(int argc, char *argv[])
 	esgi.InitWindowPosition(0, 0);
 	esgi.InitWindowSize(WIDTH, HEIGHT);
 	esgi.InitDisplayMode(ESGI_WINDOW_RGBA|ESGI_WINDOW_DOUBLEBUFFER);
-	esgi.CreateWindow("[TEST] Model OBJ ", ESGI_WINDOW_CENTERED);
+	esgi.CreateWindow("SSAO | 4A IJV - Augustin GARDETTE - Jérémie FERREIRA", ESGI_WINDOW_CENTERED);
 	//esgi.KeyboardFunction();
 	//esgi.MouseFunction();
 

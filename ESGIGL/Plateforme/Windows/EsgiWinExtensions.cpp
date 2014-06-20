@@ -60,6 +60,7 @@ PFNGLUNIFORM1FPROC                              glUniform1f                     
 PFNGLUNIFORM1IPROC                              glUniform1i                     = NULL;
 PFNGLUNIFORM3FPROC                              glUniform3f                     = NULL;
 PFNGLUNIFORM4FPROC                              glUniform4f                     = NULL;
+PFNGLUNIFORM1FVPROC                             glUniform1fv                    = NULL;
 PFNGLUNIFORM3FVPROC                             glUniform3fv                    = NULL;
 PFNGLUNIFORM4FVPROC                             glUniform4fv                    = NULL;
 
@@ -153,6 +154,7 @@ void InitOGLExtensions()
 	glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
 	glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
 	glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
+	glUniform1fv = (PFNGLUNIFORM1FVPROC)wglGetProcAddress("glUniform1fv");
 	glUniform3fv = (PFNGLUNIFORM3FVPROC)wglGetProcAddress("glUniform3fv");
 	glUniform4fv = (PFNGLUNIFORM4FVPROC)wglGetProcAddress("glUniform4fv");
 

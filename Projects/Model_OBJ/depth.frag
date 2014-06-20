@@ -1,17 +1,16 @@
 #version 330
 
-in vec4 v_color;
-in vec2 v_uv;
-in vec3 v_normal;
-in vec3 v_position;
-in vec3 v_lightPos;
+uniform vec3 pixelSize;
+uniform int u_kernelSize;
+uniform sampler2D u_depthTexture;
+uniform vec3 u_kernel[20];
+uniform sampler2D u_rotationTexture;
 
 out vec4 o_color;
 
-uniform vec3 u_LightIntensities;
-uniform vec3 u_LightPosition;
-
 void main()
 {
-	o_color = vec4(-v_position.z / 20, -v_position.z / 20, -v_position.z / 20, 1);
+	vec2 pos = gl_FragCoord.xy * pixelSize.xy;
+	vec3 depth = (vec3(1)-texture2D(u_depthTexture, pos).rgb)*10;
+	o_color = vec4(depth, 1.0);
 }
