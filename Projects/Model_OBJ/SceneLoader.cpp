@@ -97,7 +97,7 @@ unsigned int SceneLoader::loadTexture(const char * filename) {
 
 SceneLoader::SceneLoader(const char * filename) {
 	Assimp::Importer importer;
-	const aiScene * scene = importer.ReadFile(filename, aiProcess_CalcTangentSpace |  aiProcess_GenSmoothNormals |aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_SortByPType | aiProcess_FlipUVs | 0);
+	const aiScene * scene = importer.ReadFile(filename, aiProcess_CalcTangentSpace /*|  aiProcess_GenSmoothNormals*/ |aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_SortByPType | aiProcess_FlipUVs | 0);
 	if(!scene) {
 		std::cout << "Error opening " << filename << std::endl;
 		return;

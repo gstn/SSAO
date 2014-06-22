@@ -168,11 +168,11 @@ void EsgiGLApplication::HandleInputs(unsigned int key, int mousex, int mousey)
 		{
 			case 27: exit(0);
 		}
-
 		m_KeyFunc(key);
 	}
+
 	if(m_MouseFunc) {
-		m_MouseFunc(mousex, mousey);
+		m_MouseFunc(mousex, mousey, m_DeltaMouseX, m_DeltaMouseY);
 	}
 }
 

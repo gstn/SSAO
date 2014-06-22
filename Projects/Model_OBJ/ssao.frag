@@ -31,8 +31,8 @@ void main()
 		float depthDiff = depth.x - sampleDepth.x;
 
 		if (depthDiff > 0 && depthDiff < 0.01) {
-			occlusion -= 0.05;
-			//occlusion -= .01 / pow(depthDiff, 0.2);
+			//occlusion -= 0.05;
+			occlusion -= .01 / pow(depthDiff, 0.2);
 		}
 	}
 

@@ -7,8 +7,12 @@
 #include <stdlib.h>
 #include "Model_OBJ.hpp"
 #include "SceneLoader.hpp"
-#define WIDTH 800.0f
-#define HEIGHT 600.0f
+#include "Camera.hpp"
+
+#define WIDTH 1024.0f
+#define HEIGHT 768.0f
+
+#define SPEED 0.1f
 
 struct Light {
     vec3 position;
@@ -21,11 +25,15 @@ struct Light {
 
 Model_OBJ obj;
 SceneLoader * loader;
+Camera camera;
 Mesh * quad;
+
 EsgiShader shader;
 EsgiShader blurShader;
 EsgiShader quadShader;
 EsgiShader ssaoShader;
+EsgiShader blendShader;
+
 mat4 projectionMatrix;
 mat4 projectionMatrixP;
 mat4 viewMatrix;
@@ -38,9 +46,9 @@ int MatSpec [4] = {1,1,1,1};
 int LightPos[4] = {0,0,3,1};
 
 unsigned int FBO;
-unsigned int renderTexture, renderTexture2, depthTexture, kernelTexture, rotationTexture;
+unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture;
 
-int blurIntensity = 4;
+int blurIntensity = 1;
 
 
 unsigned int createTexture(int w,int h,bool isDepth = false)
@@ -79,18 +87,20 @@ void Draw()
 	//View Matrix
 	viewMatrix.Identity();
 	viewMatrix.T.set(0.f, -0.5f, -2.f, 1.f);
+	//camera.rotate(vec3(0.f, 0.f, 0.8f));
+	viewMatrix = camera.getViewMatrix();
 
 	//Projection Matrix
-	projectionMatrix = esgiOrtho(0.f, WIDTH, 0.f, HEIGHT, 0.f, 1.f);	
+	//projectionMatrix = esgiOrtho(0.f, WIDTH, 0.f, HEIGHT, 0.f, 1.f);	
 	projectionMatrixP = esgiPerspective(45.f, 4.f/3.f, 0.1f, 500.f);
 
 	//ModelView Matrix
 	// tourne autour de l'axe Y du monde
-	mat4 world = esgiRotateY(obj.transform.orientation);
+	mat4 world = esgiRotateY(obj.transform.orientation*0);
 	world.T.set(0.f, 0.f, 0.f, 1.f);
 
-	mat4 modelMatrix = esgiMultiplyMatrix(viewMatrix, world);
-
+	mat4 modelMatrix;// = esgiMultiplyMatrix(viewMatrix, world);
+	modelMatrix.Identity();
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
@@ -113,7 +123,7 @@ void Draw()
 	glUseProgram(programObject);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, depthTexture);
@@ -130,8 +140,8 @@ void Draw()
 	for (int i = 0; i < blurIntensity; ++i) {
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		glActiveTexture(GL_TEXTURE0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ping ? renderTexture2 : renderTexture, 0);
-		glBindTexture(GL_TEXTURE_2D, ping ? renderTexture : renderTexture2);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ping ? ssaoTexture2 : ssaoTexture1, 0);
+		glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
 
 		glUniform1i(glGetUniformLocation(programObject, "isVertical"), (int)ping);
 
@@ -139,7 +149,20 @@ void Draw()
 
 		ping = !ping;
 	}
+
+	//blend
+	programObject = blendShader.GetProgram();
+	glUseProgram(programObject);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, renderTexture);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture2 : ssaoTexture1);
 	
+	quad->draw(programObject);
+	
+	/*
 	//Render to quad----------------------------------
 	programObject = quadShader.GetProgram();
 	glUseProgram(programObject);
@@ -147,15 +170,21 @@ void Draw()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//glClear(GL_COLOR_BUFFER_BIT);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, ping ? renderTexture : renderTexture2);
+	glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture2 : ssaoTexture1);
 
 	quad->draw(programObject);
+	*/
 }
 
 bool Setup()
 {
 	//load the scene
-	loader = new SceneLoader("obj/courtyard++.obj");
+	loader = new SceneLoader("obj/courtyard.obj");
+
+	mat4 viewMatrix;
+	viewMatrix.Identity();
+	viewMatrix.T.set(0.f, -1.5f, 1.f, 1.f);
+	camera.setViewMatrix(viewMatrix);
 
 	//init kernel and noise
 	initKernel();
@@ -180,6 +209,11 @@ bool Setup()
 	ssaoShader.LoadVertexShader("basic.vert");
 	ssaoShader.LoadFragmentShader("ssao.frag");
 	ssaoShader.Create();
+
+	//blend shader
+	blendShader.LoadVertexShader("basic.vert");
+	blendShader.LoadFragmentShader("blend.frag");
+	blendShader.Create();
 	
 	gLight.position = vec3(0.0,-3.0,-9.0);
 	gLight.intensities = vec3(0.0,1.0,1.0);
@@ -188,9 +222,9 @@ bool Setup()
 	obj.transform.orientation = 0.f;
 
 	renderTexture = createTexture(WIDTH, HEIGHT);
-	renderTexture2 = createTexture(WIDTH, HEIGHT);
+	ssaoTexture1 = createTexture(WIDTH, HEIGHT);
+	ssaoTexture2 = createTexture(WIDTH, HEIGHT);
 	depthTexture = createTexture(WIDTH, HEIGHT, true);
-	rotationTexture = createTexture(WIDTH, HEIGHT);
 
 	glGenFramebuffers(1,&FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER,FBO);
@@ -244,7 +278,6 @@ bool Setup()
 	//init quad position
 	mat4 world;
 	mat4 modelMatrix;
-	mat4 viewMatrix;
 	mat4 projectionMatrix;
 
 	world.Identity();
@@ -272,8 +305,6 @@ bool Setup()
 	programObject = ssaoShader.GetProgram();
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "u_depthTexture"), 0);
-	//glUniform1i(glGetUniformLocation(programObject, "u_kernelTexture"), 1);
-	glUniform1i(glGetUniformLocation(programObject, "u_rotationTexture"), 2);
 	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
@@ -281,6 +312,16 @@ bool Setup()
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	glUniform1i(glGetUniformLocation(programObject, "u_kernelSize"), kernelSize);
 	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), kernelSize, kernel);
+
+	programObject = blendShader.GetProgram();
+	glUseProgram(programObject);
+	glUniform1i(glGetUniformLocation(programObject, "u_renderTexture"), 0);
+	glUniform1i(glGetUniformLocation(programObject, "u_ssaoTexture"), 1);
+	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	
 	//obj.Load("obj/courtyard++.obj");
 	return true;
@@ -288,7 +329,8 @@ bool Setup()
 
 void Update(float elapsedTime)
 {
-	obj.Process(elapsedTime);
+	//obj.Process(elapsedTime);
+	camera.updateRotation();
 }
 
 void Clean()
@@ -301,6 +343,55 @@ void Clean()
 	delete loader;
 }
 
+void keyFunc(unsigned int key) {
+	vec3 rotation;
+	vec3 translation;
+	//Z
+	if (key == 122) {
+		camera.translate(vec3(0.f, 0.f, SPEED));
+	}
+	//S
+	else if (key == 115) {
+		camera.translate(vec3(0.f, 0.f, -SPEED));
+	}
+	//Q
+	else if (key == 113) {
+		camera.translate(vec3(SPEED, 0.f, 0.f));
+	}
+	//D
+	else if (key == 100) {
+		camera.translate(vec3(-SPEED, 0.f, 0.f));
+	}
+	//<-
+	else if (key == ESGI_KEY_LEFT) {
+		camera.rotate(vec3(0.f, 0.f, SPEED));
+	}
+	//->
+	else if (key == ESGI_KEY_RIGHT) {
+		camera.rotate(vec3(0.f, 0.f, -SPEED));
+	}
+	//up
+	else if (key == ESGI_KEY_UP) {
+
+	}
+	//down
+	else if (key == ESGI_KEY_DOWN) {
+
+	}
+}
+
+void mouseFunc(int x, int y, int deltaX, int deltaY) {
+
+	float yaw = ( x / WIDTH - .5 ) * 2;
+	float pitch = ( y / HEIGHT - .5 ) * 2;
+
+	float yawSign = yaw > 0 ? 1.f : -1.f;
+	float pitchSign = pitch > 0 ? 1.f : -1.f;
+
+	yaw *= yawSign * yaw;
+	pitch *= pitchSign * pitch;
+	camera.setRotation(pitch, yaw);
+}
 
 int main(int argc, char *argv[])
 {
@@ -310,8 +401,8 @@ int main(int argc, char *argv[])
 	esgi.InitWindowSize(WIDTH, HEIGHT);
 	esgi.InitDisplayMode(ESGI_WINDOW_RGBA|ESGI_WINDOW_DOUBLEBUFFER);
 	esgi.CreateWindow("SSAO | 4A IJV - Augustin GARDETTE - Jérémie FERREIRA", ESGI_WINDOW_CENTERED);
-	//esgi.KeyboardFunction();
-	//esgi.MouseFunction();
+	esgi.KeyboardFunction(&keyFunc);
+	esgi.MouseFunction(&mouseFunc);
 
     esgi.IdleFunc(&Update);
 	esgi.DisplayFunc(&Draw);
