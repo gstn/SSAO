@@ -11,6 +11,7 @@
 class SceneLoader
 {
 	std::vector<Mesh*> meshes;
+	int currentTexture;
 	void recursiveProcess(aiNode * node, const aiScene * scene);
 	void processMesh(aiMesh * mesh, const aiScene * scene);
 	void getFolder(const char * filename);
@@ -19,12 +20,13 @@ class SceneLoader
 	int textureLoadedAt(const char * name) const;
 	char folder[FILENAME_MAX];
 public:
-	SceneLoader(){}
+	SceneLoader() {}
 	SceneLoader(Mesh * mesh);
 	SceneLoader(const char * filename);
 	~SceneLoader(void);
 	void draw(unsigned int programId);
 	std::vector<Mesh *>& getMeshes();
 	std::vector<textureData> textures;
+	int getNextTexture();
 };
 

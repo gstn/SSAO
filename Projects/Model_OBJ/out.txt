@@ -1,0 +1,12 @@
+_______________________________
+Instructions
+
+  z
+q s d: move
+
+b: toogle blend phong and ssao
+S: SSAO rendering
+P: Phong rendering
+D: depth
+N: normals
+T: next scene texture

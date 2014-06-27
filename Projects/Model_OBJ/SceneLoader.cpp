@@ -140,6 +140,8 @@ unsigned int SceneLoader::loadTexture(const char * filename) {
 
 SceneLoader::SceneLoader(const char * filename) {
 
+	currentTexture = 0;
+
 	Assimp::Importer importer;
 	const aiScene * scene = importer.ReadFile(filename, aiProcess_CalcTangentSpace /*|  aiProcess_GenSmoothNormals*/ |aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_SortByPType | aiProcess_FlipUVs | 0);
 
@@ -222,4 +224,14 @@ void SceneLoader::draw(unsigned int programId) {
 
 std::vector<Mesh *>& SceneLoader::getMeshes() {
 	return meshes;
+}
+
+int SceneLoader::getNextTexture() {
+	if(textures.empty()) return -1;
+
+	if(++currentTexture == textures.size()) {
+		currentTexture = 0;
+	}
+
+	return textures[currentTexture].id;
 }

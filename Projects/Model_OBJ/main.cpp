@@ -10,8 +10,9 @@
 #include "Camera.hpp"
 #include "../../ESGIGL/Libs/GLUT/glut.h"
 
+#include <fstream>
 #define WIDTH 1024.0f
-#define HEIGHT 768.0f
+#define HEIGHT 600.0f
 
 struct Light {
     vec3 position;
@@ -32,6 +33,7 @@ EsgiShader blurShader;
 EsgiShader quadShader;
 EsgiShader ssaoShader;
 EsgiShader blendShader;
+EsgiShader textureShader;
 
 mat4 projectionMatrix;
 mat4 projectionMatrixP;
@@ -39,7 +41,10 @@ mat4 viewMatrix;
 Light gLight;
 
 //render controls
-bool blend = false;
+enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE};
+int render = SSAO;
+bool blend = true;
+bool renderSSAO = false;
 
 float g_rotation;
 glutWindow win;
@@ -48,7 +53,7 @@ int MatSpec [4] = {1,1,1,1};
 int LightPos[4] = {0,0,3,1};
 
 unsigned int FBO;
-unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture;
+unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture, normalTexture, sceneTexture;
 
 int blurIntensity = 0;
 
@@ -94,7 +99,7 @@ void Draw()
 
 	//Projection Matrix
 	//projectionMatrix = esgiOrtho(0.f, WIDTH, 0.f, HEIGHT, 0.f, 1.f);	
-	projectionMatrixP = esgiPerspective(45.f, 4.f/3.f, 0.1f, 500.f);
+	projectionMatrixP = esgiPerspective(45.f, WIDTH/HEIGHT, 0.1f, 500.f);
 
 	//ModelView Matrix
 	// tourne autour de l'axe Y du monde
@@ -114,66 +119,85 @@ void Draw()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	loader->draw(programObject);
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	loader->draw(programObject);
 
-	//ssao
-	glDisable(GL_DEPTH_TEST);
-	programObject = ssaoShader.GetProgram();
-	glUseProgram(programObject);
+	if (render == SSAO) {
+		loader->draw(programObject);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
-	
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, depthTexture);
-	
-	quad->draw(programObject);
+		//ssao
+		glDisable(GL_DEPTH_TEST);
+		programObject = ssaoShader.GetProgram();
+		glUseProgram(programObject);
 
-	//Blur
-	programObject = blurShader.GetProgram();
-	glUseProgram(programObject);
-
-	glActiveTexture(GL_TEXTURE0);
-	bool ping = true;
-	
-	for (int i = 0; i < blurIntensity; ++i) {
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
+	
 		glActiveTexture(GL_TEXTURE0);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ping ? ssaoTexture2 : ssaoTexture1, 0);
-		glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
-
-		glUniform1i(glGetUniformLocation(programObject, "isVertical"), (int)ping);
-
-		quad->draw(programObject);
-
-		ping = !ping;
-	}
-
-	//blend
-	if(blend) {
-		programObject = blendShader.GetProgram();
-		glUseProgram(programObject);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, renderTexture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
+		glBindTexture(GL_TEXTURE_2D, depthTexture);
 	
 		quad->draw(programObject);
 
-	} else {
-		//Render to quad----------------------------------
-		programObject = quadShader.GetProgram();
+		//Blur
+		programObject = blurShader.GetProgram();
 		glUseProgram(programObject);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		//glClear(GL_COLOR_BUFFER_BIT);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
+		bool ping = true;
+	
+		for (int i = 0; i < blurIntensity; ++i) {
+			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+			glActiveTexture(GL_TEXTURE0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ping ? ssaoTexture2 : ssaoTexture1, 0);
+			glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
+
+			glUniform1i(glGetUniformLocation(programObject, "isVertical"), (int)ping);
+
+			quad->draw(programObject);
+
+			ping = !ping;
+		}
+
+		//blend
+		if(blend) {
+			programObject = blendShader.GetProgram();
+			glUseProgram(programObject);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, renderTexture);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
+	
+			quad->draw(programObject);
+
+		} else {
+			//Render to quad----------------------------------
+			programObject = quadShader.GetProgram();
+			glUseProgram(programObject);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			//glClear(GL_COLOR_BUFFER_BIT);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
+
+			quad->draw(programObject);
+		}
+	} else {
+		loader->draw(programObject);
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glDisable(GL_DEPTH_TEST);
+
+		programObject = textureShader.GetProgram();
+		glUseProgram(programObject);
+		glActiveTexture(GL_TEXTURE0);
+
+		if (render == DEPTH) {
+			glBindTexture(GL_TEXTURE_2D, depthTexture);
+		} else if (render == PHONG) {
+			glBindTexture(GL_TEXTURE_2D, renderTexture);
+		} else if (render == TEXTURE) {
+			glBindTexture(GL_TEXTURE_2D, sceneTexture);
+		}
 
 		quad->draw(programObject);
 	}
@@ -217,6 +241,11 @@ bool Setup()
 	blendShader.LoadVertexShader("basic.vert");
 	blendShader.LoadFragmentShader("blend.frag");
 	blendShader.Create();
+
+	//texture shader
+	textureShader.LoadVertexShader("basic.vert");
+	textureShader.LoadFragmentShader("renderTexture.frag");
+	textureShader.Create();
 	
 	gLight.position = vec3(0.0,-3.0,-9.0);
 	gLight.intensities = vec3(0.0,1.0,1.0);
@@ -228,6 +257,7 @@ bool Setup()
 	ssaoTexture1 = createTexture(WIDTH, HEIGHT);
 	ssaoTexture2 = createTexture(WIDTH, HEIGHT);
 	depthTexture = createTexture(WIDTH, HEIGHT, true);
+	normalTexture = createTexture(WIDTH, HEIGHT);
 
 	glGenFramebuffers(1,&FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER,FBO);
@@ -258,13 +288,13 @@ bool Setup()
 		tmp.v=0;
 		vertices.push_back(tmp);
 		//3.
-		tmp.position = vec3(0.0f,-1.0,0.0);
-		tmp.u=0.5;
+		tmp.position = vec3(1.0f,-1.0,0.0);
+		tmp.u=1;
 		tmp.v=0;
 		vertices.push_back(tmp);
 		//4.
-		tmp.position = vec3(0.0f,1.0,0.0);
-		tmp.u=0.5;
+		tmp.position = vec3(1.0f,1.0,0.0);
+		tmp.u=1;
 		tmp.v=1;
 		vertices.push_back(tmp);
 		
@@ -325,8 +355,28 @@ bool Setup()
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+
+	programObject = textureShader.GetProgram();
+	glUseProgram(programObject);
+	glUniform1i(glGetUniformLocation(programObject, "u_texture"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	
-	//obj.Load("obj/courtyard++.obj");
+	ofstream os;
+	os.open("out.txt");
+	os << "_______________________________\n";
+	os << "Instructions\n\n";
+	os << "  z\n";
+	os << "q s d: move\n\n";
+	os << "b: toogle blend phong and ssao\n";
+	os << "S: SSAO rendering\n";
+	os << "P: Phong rendering\n";
+	os << "D: depth\n";
+	os << "N: normals\n";
+	os << "T: next scene texture\n";
+
 	return true;
 }
 
@@ -346,6 +396,8 @@ void Clean()
 	delete loader;
 }
 
+bool look = false;
+
 void keyFunc(unsigned char key, int x, int y) {
 	//Z
 	if (key == 122) {
@@ -363,8 +415,21 @@ void keyFunc(unsigned char key, int x, int y) {
 	else if (key == 100) {
 		camera.moveRight(true);
 	}
-	else if (key == 102) {
-		camera.freezeRotation();
+	else if (key == 'S') {
+		render = SSAO;
+	}
+	else if (key == 'P') {
+		render = PHONG;
+	}
+	else if (key == 'D') {
+		render = DEPTH;
+	}
+	else if (key == 'T') {
+		render = TEXTURE;
+		sceneTexture = loader->getNextTexture();
+	}
+	else if (key == 'N') {
+		render = NORMALS;
 	}
 	else if (key == 'b') {
 		blend = !blend;
@@ -379,7 +444,6 @@ void keyFunc(unsigned char key, int x, int y) {
 	}
 	//space
 	else if(key == 32) {
-		std::cout << "jump";
 		camera.jump();
 	}
 }
@@ -407,17 +471,26 @@ void keyUpFunc(unsigned char key, int x, int y) {
 	}
 }
 
-void mouseFunc(int x, int y) {
+void mouseFunc(int button, int state, int x, int y) {
 
-	float yaw = ( x / WIDTH - .5 ) * 3;
-	float pitch = ( y / HEIGHT - .5 ) * 3;
+	if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+		look = !look;
+		camera.freezeRotation();
+	}
+}
 
-	float yawSign = yaw > 0 ? 1.f : -1.f;
-	float pitchSign = pitch > 0 ? 1.f : -1.f;
+void passiveMotionFunc(int x, int y) {
+	if (look) {
+		float yaw = ( x / WIDTH - .5 ) * 3;
+		float pitch = ( y / HEIGHT - .5 ) * 3;
 
-	yaw *= yawSign * yaw;
-	pitch *= pitchSign * pitch;
-	camera.setRotation(pitch, yaw);
+		float yawSign = yaw > 0 ? 1.f : -1.f;
+		float pitchSign = pitch > 0 ? 1.f : -1.f;
+
+		yaw *= yawSign * yaw;
+		pitch *= pitchSign * pitch;
+		camera.setRotation(pitch, yaw);
+	}
 }
 
 int main(int argc, char *argv[])
@@ -434,9 +507,10 @@ int main(int argc, char *argv[])
 	esgi.DisplayFunc(&Draw);
     esgi.InitFunc(&Setup);
 
-	glutPassiveMotionFunc(&mouseFunc);
+	glutPassiveMotionFunc(&passiveMotionFunc);
 	glutKeyboardFunc(&keyFunc);
 	glutKeyboardUpFunc(&keyUpFunc);
+	glutMouseFunc(&mouseFunc);
 	glutIgnoreKeyRepeat(1);
     
 	esgi.CleanFunc(&Clean);
