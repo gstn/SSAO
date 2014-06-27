@@ -1,10 +1,9 @@
 #include <random>
 #include "../ESGIGL/common/vector.h"
-#include <iostream>
 
 #define PI 3.14159265
 
-const int kernelSize = 20;
+const int kernelSize = 40;
 float kernel[3 * kernelSize];
 const int noiseSize = 5;
 vec3 noise[noiseSize];
@@ -35,10 +34,6 @@ void initKernel() {
 		kernel[j] = sample.x;
 		kernel[j + 1] = sample.y;
 		kernel[j + 2] = sample.z;
-	}
-
-	for(int i = 0; i < kernelSize * 3; ++i) {
-		std::cout << kernel[i] << std::endl;
 	}
 }
 

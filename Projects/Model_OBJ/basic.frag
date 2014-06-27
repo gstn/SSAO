@@ -10,6 +10,7 @@ out vec4 o_color;
 
 uniform vec3 u_LightIntensities;
 uniform vec3 u_LightPosition;
+uniform sampler2D u_texture0;
 
 void main()
 {	
@@ -27,6 +28,9 @@ void main()
 
 	//ambient
 	vec3 vambient = vec3( 0.2 );
+
+	//texture
+	vec4 vtexture = texture2D(u_texture0, v_uv) + .5;
 	
-	o_color = vec4( vdiffuse + vspec + vambient, 1 );
+	o_color = vec4( vdiffuse + vspec + vambient, 1 ) * vtexture;
 }

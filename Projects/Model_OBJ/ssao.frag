@@ -1,7 +1,7 @@
 uniform vec3 pixelSize;
 uniform int u_kernelSize;
 uniform sampler2D u_depthTexture;
-uniform vec3 u_kernel[20];
+uniform vec3 u_kernel[40];
 uniform sampler2D u_rotationTexture;
 
 float rand(vec2 co){
@@ -31,8 +31,9 @@ void main()
 		float depthDiff = depth.x - sampleDepth.x;
 
 		if (depthDiff > 0 && depthDiff < 0.01) {
-			//occlusion -= 0.05;
-			occlusion -= .01 / pow(depthDiff, 0.2);
+			//occlusion -= 0.02;
+			occlusion -= 0.02 - depthDiff;
+			//occlusion -= .01 / pow(depthDiff, 0.2);
 		}
 	}
 

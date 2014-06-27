@@ -168,12 +168,11 @@ void EsgiGLApplication::HandleInputs(unsigned int key, int mousex, int mousey)
 		{
 			case 27: exit(0);
 		}
-		m_KeyFunc(key);
+		//m_KeyFunc(key);
+		//m_KeyUpFunc(key);
 	}
 
-	if(m_MouseFunc) {
-		m_MouseFunc(mousex, mousey, m_DeltaMouseX, m_DeltaMouseY);
-	}
+	//m_MouseFunc(mousex, mousey, m_DeltaMouseX, m_DeltaMouseY);
 }
 
 bool EsgiGLApplication::Init()
@@ -327,6 +326,21 @@ bool EsgiGLApplication::IsExtensionSupported(const char *extension)
 // --- Glut callbacks --------------------------------------------------------
 
 void esgiKeyboardFunc(unsigned char key, int mx, int my)
+{	
+	EsgiGLApplication::g_ThisInstance->HandleInputs(key, mx, my);
+}
+
+void esgiKeyboardUpFunc(unsigned char key, int mx, int my)
+{	
+	EsgiGLApplication::g_ThisInstance->HandleInputs(key, mx, my);
+}
+
+void esgiKeyboardSpecialFunc(unsigned char key, int mx, int my)
+{	
+	EsgiGLApplication::g_ThisInstance->HandleInputs(key, mx, my);
+}
+
+void esgiKeyboardSpecialUpFunc(unsigned char key, int mx, int my)
 {	
 	EsgiGLApplication::g_ThisInstance->HandleInputs(key, mx, my);
 }

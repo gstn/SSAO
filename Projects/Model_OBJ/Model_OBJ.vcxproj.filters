@@ -3,6 +3,9 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Model_OBJ.cpp" />
+    <ClCompile Include="SceneLoader.cpp" />
+    <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="shaders">
@@ -19,5 +22,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Model_OBJ.hpp" />
+    <ClInclude Include="ssaoUtils.hpp" />
+    <ClInclude Include="SceneLoader.hpp" />
+    <ClInclude Include="Mesh.hpp" />
+    <ClInclude Include="Camera.hpp" />
   </ItemGroup>
 </Project>

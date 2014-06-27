@@ -8,11 +8,10 @@
 #include "Model_OBJ.hpp"
 #include "SceneLoader.hpp"
 #include "Camera.hpp"
+#include "../../ESGIGL/Libs/GLUT/glut.h"
 
 #define WIDTH 1024.0f
 #define HEIGHT 768.0f
-
-#define SPEED 0.1f
 
 struct Light {
     vec3 position;
@@ -39,6 +38,9 @@ mat4 projectionMatrixP;
 mat4 viewMatrix;
 Light gLight;
 
+//render controls
+bool blend = false;
+
 float g_rotation;
 glutWindow win;
 double a=0;
@@ -48,7 +50,7 @@ int LightPos[4] = {0,0,3,1};
 unsigned int FBO;
 unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture;
 
-int blurIntensity = 1;
+int blurIntensity = 0;
 
 
 unsigned int createTexture(int w,int h,bool isDepth = false)
@@ -151,35 +153,36 @@ void Draw()
 	}
 
 	//blend
-	programObject = blendShader.GetProgram();
-	glUseProgram(programObject);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	if(blend) {
+		programObject = blendShader.GetProgram();
+		glUseProgram(programObject);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderTexture);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture2 : ssaoTexture1);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, renderTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
 	
-	quad->draw(programObject);
-	
-	/*
-	//Render to quad----------------------------------
-	programObject = quadShader.GetProgram();
-	glUseProgram(programObject);
+		quad->draw(programObject);
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//glClear(GL_COLOR_BUFFER_BIT);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture2 : ssaoTexture1);
+	} else {
+		//Render to quad----------------------------------
+		programObject = quadShader.GetProgram();
+		glUseProgram(programObject);
 
-	quad->draw(programObject);
-	*/
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		//glClear(GL_COLOR_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ping ? ssaoTexture1 : ssaoTexture2);
+
+		quad->draw(programObject);
+	}
 }
 
 bool Setup()
 {
 	//load the scene
-	loader = new SceneLoader("obj/courtyard.obj");
+	loader = new SceneLoader("obj/courtyard/courtyard.obj");
 
 	mat4 viewMatrix;
 	viewMatrix.Identity();
@@ -330,7 +333,7 @@ bool Setup()
 void Update(float elapsedTime)
 {
 	//obj.Process(elapsedTime);
-	camera.updateRotation();
+	camera.update();
 }
 
 void Clean()
@@ -343,47 +346,71 @@ void Clean()
 	delete loader;
 }
 
-void keyFunc(unsigned int key) {
-	vec3 rotation;
-	vec3 translation;
+void keyFunc(unsigned char key, int x, int y) {
 	//Z
 	if (key == 122) {
-		camera.translate(vec3(0.f, 0.f, SPEED));
+		camera.moveForward(true);
 	}
 	//S
 	else if (key == 115) {
-		camera.translate(vec3(0.f, 0.f, -SPEED));
+		camera.moveBackwards(true);
 	}
 	//Q
 	else if (key == 113) {
-		camera.translate(vec3(SPEED, 0.f, 0.f));
+		camera.moveLeft(true);
 	}
 	//D
 	else if (key == 100) {
-		camera.translate(vec3(-SPEED, 0.f, 0.f));
+		camera.moveRight(true);
 	}
-	//<-
-	else if (key == ESGI_KEY_LEFT) {
-		camera.rotate(vec3(0.f, 0.f, SPEED));
+	else if (key == 102) {
+		camera.freezeRotation();
 	}
-	//->
-	else if (key == ESGI_KEY_RIGHT) {
-		camera.rotate(vec3(0.f, 0.f, -SPEED));
+	else if (key == 'b') {
+		blend = !blend;
 	}
-	//up
-	else if (key == ESGI_KEY_UP) {
-
+	else if (key == '+') {
+		++blurIntensity;
+		std::cout << "Blur level: " << blurIntensity << std::endl;
 	}
-	//down
-	else if (key == ESGI_KEY_DOWN) {
-
+	else if (key == '-' && blurIntensity != 0) {
+		--blurIntensity;
+		std::cout << "Blur level: " << blurIntensity << std::endl;
+	}
+	//space
+	else if(key == 32) {
+		std::cout << "jump";
+		camera.jump();
 	}
 }
 
-void mouseFunc(int x, int y, int deltaX, int deltaY) {
+void keyUpFunc(unsigned char key, int x, int y) {
+	//Z
+	if (key == 122) {
+		camera.moveForward(false);
+	}
+	//S
+	else if (key == 115) {
+		camera.moveBackwards(false);
+	}
+	//Q
+	else if (key == 113) {
+		camera.moveLeft(false);
+	}
+	//D
+	else if (key == 100) {
+		camera.moveRight(false);
+	}
 
-	float yaw = ( x / WIDTH - .5 ) * 2;
-	float pitch = ( y / HEIGHT - .5 ) * 2;
+	if(key == 27) {
+		exit(0);
+	}
+}
+
+void mouseFunc(int x, int y) {
+
+	float yaw = ( x / WIDTH - .5 ) * 3;
+	float pitch = ( y / HEIGHT - .5 ) * 3;
 
 	float yawSign = yaw > 0 ? 1.f : -1.f;
 	float pitchSign = pitch > 0 ? 1.f : -1.f;
@@ -401,13 +428,16 @@ int main(int argc, char *argv[])
 	esgi.InitWindowSize(WIDTH, HEIGHT);
 	esgi.InitDisplayMode(ESGI_WINDOW_RGBA|ESGI_WINDOW_DOUBLEBUFFER);
 	esgi.CreateWindow("SSAO | 4A IJV - Augustin GARDETTE - Jérémie FERREIRA", ESGI_WINDOW_CENTERED);
-	esgi.KeyboardFunction(&keyFunc);
-	esgi.MouseFunction(&mouseFunc);
+	//esgi.MouseFunction( &mouseFunc );
 
     esgi.IdleFunc(&Update);
 	esgi.DisplayFunc(&Draw);
     esgi.InitFunc(&Setup);
 
+	glutPassiveMotionFunc(&mouseFunc);
+	glutKeyboardFunc(&keyFunc);
+	glutKeyboardUpFunc(&keyUpFunc);
+	glutIgnoreKeyRepeat(1);
     
 	esgi.CleanFunc(&Clean);
 	esgi.MainLoop();

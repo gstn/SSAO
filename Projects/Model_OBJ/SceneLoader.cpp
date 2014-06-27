@@ -1,5 +1,7 @@
 #include "SceneLoader.hpp"
 
+#include "Dist\FreeImage.h"
+
 void SceneLoader::recursiveProcess(aiNode * node, const aiScene * scene) {
 
 	//process
@@ -21,7 +23,7 @@ SceneLoader::SceneLoader(Mesh * mesh) {
 void SceneLoader::processMesh(aiMesh * mesh, const aiScene * scene) {
 	std::vector<vertexData> data;
 	std::vector<unsigned short> indices;
-	std::vector<textureData> textures;
+	std::vector<textureData> tex;
 
 	for(int i = 0; i < mesh->mNumVertices; ++i) {
 		vertexData tmp;
@@ -82,22 +84,65 @@ void SceneLoader::processMesh(aiMesh * mesh, const aiScene * scene) {
 	for(int i = 0; i < mat->GetTextureCount(aiTextureType_DIFFUSE); ++i) {
 		aiString str;
 		mat->GetTexture(aiTextureType_DIFFUSE, i, &str);
-		textureData tmp;
-		tmp.id = loadTexture(str.C_Str());
-		tmp.type = 0;
-		textures.push_back(tmp);
+		textureData td;
+		//const char * name = str.C_Str();
+		char name[FILENAME_MAX];
+		getFilename(str.C_Str(), name);
+
+		std::cout << name << std::endl;
+
+		int index = textureLoadedAt(name);
+
+		if(index < 0) {
+			char filepath[FILENAME_MAX];
+			strcpy(filepath, folder);
+			strcat(filepath, name);
+			td.id = loadTexture(filepath);
+			td.type = 0;
+			strcpy(td.name, name);
+			textures.push_back(td);
+			index = textures.size() - 1;
+		}
+		
+		tex.push_back(textures[index]);
 	}
 
-	meshes.push_back(new Mesh(&data, &indices, &textures));
+	meshes.push_back(new Mesh(&data, &indices, &tex));
 }
 
 unsigned int SceneLoader::loadTexture(const char * filename) {
-	return 0;
+
+	unsigned int textureId = 0;
+
+	FREE_IMAGE_FORMAT fif = FreeImage_GetFileType(filename);
+	FIBITMAP * bitmap = FreeImage_Load(fif, filename, 0);
+	FIBITMAP * pImage = FreeImage_ConvertTo32Bits(bitmap);
+	int nWidth = FreeImage_GetWidth(pImage);
+	int nHeight = FreeImage_GetHeight(pImage);
+
+	glGenTextures(1, &textureId);
+
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, nWidth, nHeight, 0, GL_BGRA, GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(pImage));
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 3.0);
+	
+
+	FreeImage_Unload(pImage);
+	FreeImage_Unload(bitmap);
+
+	return textureId;
 }
 
 SceneLoader::SceneLoader(const char * filename) {
+
 	Assimp::Importer importer;
 	const aiScene * scene = importer.ReadFile(filename, aiProcess_CalcTangentSpace /*|  aiProcess_GenSmoothNormals*/ |aiProcess_JoinIdenticalVertices | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_SortByPType | aiProcess_FlipUVs | 0);
+
 	if(!scene) {
 		std::cout << "Error opening " << filename << std::endl;
 		return;
@@ -106,6 +151,9 @@ SceneLoader::SceneLoader(const char * filename) {
 		std::cout << "Error importing " << filename << std::endl;
 		return;
 	}
+
+	getFolder(filename);
+
 	recursiveProcess(scene->mRootNode, scene);
 }
 
@@ -114,6 +162,56 @@ SceneLoader::~SceneLoader(void) {
 	for(int i = 0; i < meshes.size(); ++i) {
 		delete meshes[i];
 	}
+}
+
+void SceneLoader::getFolder(const char * filename) {
+
+	int i = 0;
+	int index = 0;
+	char dir[FILENAME_MAX];
+
+	while(filename[i]) {
+		if(filename[i] == '/' || filename[i] == '\\') {
+			index = i + 1;
+		}
+		++i;
+	}
+
+	for(i = 0; i < index; ++i) {
+		dir[i] = filename[i];
+	}
+
+	dir[i] = '\0';
+
+	strcpy(folder, dir);
+}
+
+void SceneLoader::getFilename(const char * filepath, char * filename) const {
+	int i = 0;
+	int j = 0;
+
+	while(filepath[i]) {
+		if(filepath[i] == '/' || filepath[i] == '\\') {
+			j = 0;
+		} else {
+			filename[j] = filepath[i];
+			++j;
+		}
+		++i;
+	}
+
+	filename[j] = '\0';
+}
+
+int SceneLoader::textureLoadedAt(const char * name) const {
+	
+	for(int i = 0; i < textures.size(); ++i) {
+		if(!strcmp(name, textures[i].name)) {
+			return i;
+		}
+	}
+
+	return -1;
 }
 
 void SceneLoader::draw(unsigned int programId) {

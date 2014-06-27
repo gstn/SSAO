@@ -35,15 +35,15 @@ void Mesh::draw(unsigned int programId) {
 	int uv = glGetAttribLocation(programId, "uv");
 
 	//textures
-	/*
-	std::string str = "texture";
+	std::string str = "u_texture";
 	for(int i = 0 ; i < textures.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
-		std::string curStr = str + (char)(i + '0');
-		glUniform1i(glGetUniformLocation(programId,  (char *)curStr.c_str()), i);
+		//std::string curStr = str + (char)(i + '0');
+		//glUniform1i(glGetUniformLocation(programId,  (char *)curStr.c_str()), i);
+		glUniform1i(glGetUniformLocation(programId,  "u_texture0"), i);
 	}
-	*/
+	
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ind);
 
@@ -58,10 +58,10 @@ void Mesh::draw(unsigned int programId) {
 
 	glEnableVertexAttribArray(color);
 	glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, sizeof(vertexData), (void*)(9 * sizeof(float)) );
-
+	*/
 	glEnableVertexAttribArray(uv);
 	glVertexAttribPointer(uv, 2, GL_FLOAT, GL_FALSE, sizeof(vertexData), (void*)(12 * sizeof(float)) );
-	*/
+	
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_SHORT, 0);
 
 	glDisableVertexAttribArray(vertex);

@@ -89,7 +89,9 @@ void ESGI_PRINT(const char *format, ...);
 void ESGI_PRINTSCREEN(int x, int y, const char *format, ...);
 
 void esgiKeyboardFunc(unsigned char key, int mx, int my);
+void esgiKeyboardUpFunc(unsigned char key, int mx, int my);
 void esgiKeyboardSpecialFunc(int key, int mx, int my);
+void esgiKeyboardSpecialUpFunc(int key, int mx, int my);
 void esgiMouseFunc(int mx, int my);
 void esgiReshapeFunc(int , int );
 void esgiIdleFunc();
@@ -171,8 +173,10 @@ protected:
 	void (*m_DebugDrawFunc)();
 	void (*m_UpdateFunc)( float deltaTime );
 	void (*m_KeyFunc)( unsigned int );
+	void (*m_KeyUpFunc)( unsigned int );
+	void (*m_KeySpecialFunc)( unsigned int );
+	void (*m_KeySpecialUpFunc)( unsigned int );
 	void (*m_MouseFunc)( int, int, int, int);
-	//void (*m_KeySpecialFunc)( unsigned char );
 
 private:
 	// renderer

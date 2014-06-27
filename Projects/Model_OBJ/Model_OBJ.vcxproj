@@ -69,14 +69,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\EsgiGL;..\..\EsgiGL\Libs;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\libraries\FreeImage;D:\libraries\assimp--3.0.1270-sdk\include;..\..\EsgiGL;..\..\EsgiGL\Libs;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalDependencies>esgiGL2debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>esgiGL2debug.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../EsgiGL/Libs</AdditionalLibraryDirectories>
+      <AdditionalDependencies>FreeImage.lib;esgiGL2debug.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:\libraries\FreeImage\Dist;D:\libraries\assimp--3.0.1270-sdk\lib\assimp_release-dll_win32;../../EsgiGL/Libs</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug EGL|Win32'">
@@ -123,15 +123,22 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model_OBJ.cpp" />
+    <ClCompile Include="SceneLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="basic.frag" />
     <None Include="basic.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="Model_OBJ.hpp" />
+    <ClInclude Include="SceneLoader.hpp" />
+    <ClInclude Include="ssaoUtils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

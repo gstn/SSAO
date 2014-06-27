@@ -439,9 +439,8 @@ void EsgiContext::MainLoop()
 	glutReshapeFunc(&esgiReshapeFunc);
 	glutIdleFunc(&esgiIdleFunc);
 	glutDisplayFunc(&esgiDisplayFunc);
-	glutKeyboardFunc(&esgiKeyboardFunc);
-	glutSpecialFunc(&esgiKeyboardSpecialFunc);
-	glutPassiveMotionFunc(&esgiMouseFunc);
+	//glutKeyboardFunc(&esgiKeyboardFunc);
+	//glutPassiveMotionFunc(&esgiMouseFunc);
 	glutMainLoop();
 
 #else

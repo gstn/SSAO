@@ -8,6 +8,8 @@ void main()
 	vec2 pos = gl_FragCoord.xy * pixelSize;
 
 	float values[9];
+
+
 	values[0] = 0.05;
 	values[1] = 0.09;
 	values[2] = 0.11;

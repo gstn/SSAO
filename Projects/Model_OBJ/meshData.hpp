@@ -14,4 +14,5 @@ struct textureData {
 	unsigned int id;
 	unsigned int programId;
 	unsigned int type;
+	char name[FILENAME_MAX];
 };
