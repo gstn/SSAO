@@ -126,7 +126,6 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Mesh.cpp" />
-    <ClCompile Include="Model_OBJ.cpp" />
     <ClCompile Include="SceneLoader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -136,7 +135,6 @@
   <ItemGroup>
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="Mesh.hpp" />
-    <ClInclude Include="Model_OBJ.hpp" />
     <ClInclude Include="SceneLoader.hpp" />
     <ClInclude Include="ssaoUtils.hpp" />
   </ItemGroup>

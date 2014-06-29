@@ -5,12 +5,10 @@
 #include "ssaoUtils.hpp"
 
 #include <stdlib.h>
-#include "Model_OBJ.hpp"
 #include "SceneLoader.hpp"
 #include "Camera.hpp"
 #include "../../ESGIGL/Libs/GLUT/glut.h"
 
-#include <fstream>
 #define WIDTH 1024.0f
 #define HEIGHT 600.0f
 
@@ -23,7 +21,6 @@ struct Light {
  * Program code
  ***************************************************************************/
 
-Model_OBJ obj;
 SceneLoader * loader;
 Camera camera;
 Mesh * quad;
@@ -41,19 +38,19 @@ mat4 viewMatrix;
 Light gLight;
 
 //render controls
-enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE};
+enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE, POSITIONS};
 int render = SSAO;
 bool blend = true;
 bool renderSSAO = false;
 
 float g_rotation;
-glutWindow win;
 double a=0;
 int MatSpec [4] = {1,1,1,1};
 int LightPos[4] = {0,0,3,1};
 
 unsigned int FBO;
-unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture, normalTexture, sceneTexture;
+unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture, normalTexture, positionTexture, sceneTexture;
+unsigned int texturesArray[2];
 
 int blurIntensity = 0;
 
@@ -103,10 +100,10 @@ void Draw()
 
 	//ModelView Matrix
 	// tourne autour de l'axe Y du monde
-	mat4 world = esgiRotateY(obj.transform.orientation*0);
+	mat4 world;
 	world.T.set(0.f, 0.f, 0.f, 1.f);
 
-	mat4 modelMatrix;// = esgiMultiplyMatrix(viewMatrix, world);
+	mat4 modelMatrix;
 	modelMatrix.Identity();
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
@@ -116,13 +113,21 @@ void Draw()
 	glUniform3fv(glGetUniformLocation(programObject, "u_LightIntensities"), 1, &gLight.intensities.x);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+	GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glDrawBuffers(3, mrt);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normalTexture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, positionTexture, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (render == SSAO) {
-		loader->draw(programObject);
+	loader->draw(programObject);
 
+	glDrawBuffer(GL_BACK);
+
+	if (render == SSAO) {
 		//ssao
 		glDisable(GL_DEPTH_TEST);
 		programObject = ssaoShader.GetProgram();
@@ -130,7 +135,7 @@ void Draw()
 
 		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
-	
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthTexture);
 	
@@ -182,8 +187,6 @@ void Draw()
 			quad->draw(programObject);
 		}
 	} else {
-		loader->draw(programObject);
-
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glDisable(GL_DEPTH_TEST);
 
@@ -197,6 +200,10 @@ void Draw()
 			glBindTexture(GL_TEXTURE_2D, renderTexture);
 		} else if (render == TEXTURE) {
 			glBindTexture(GL_TEXTURE_2D, sceneTexture);
+		} else if (render == NORMALS) {
+			glBindTexture(GL_TEXTURE_2D, normalTexture);
+		} else if (render == POSITIONS) {
+			glBindTexture(GL_TEXTURE_2D, positionTexture);
 		}
 
 		quad->draw(programObject);
@@ -248,23 +255,18 @@ bool Setup()
 	textureShader.Create();
 	
 	gLight.position = vec3(0.0,-3.0,-9.0);
-	gLight.intensities = vec3(0.0,1.0,1.0);
-	obj.transform.position = vec3(0.f,0.f,0.0f);
-	obj.transform.rotationSpeed = 90.f;
-	obj.transform.orientation = 0.f;
+	gLight.intensities = vec3(0.8, 0.8, 0.8);
 
 	renderTexture = createTexture(WIDTH, HEIGHT);
 	ssaoTexture1 = createTexture(WIDTH, HEIGHT);
 	ssaoTexture2 = createTexture(WIDTH, HEIGHT);
 	depthTexture = createTexture(WIDTH, HEIGHT, true);
 	normalTexture = createTexture(WIDTH, HEIGHT);
+	positionTexture = createTexture(WIDTH, HEIGHT);
 
 	glGenFramebuffers(1,&FBO);
-	glBindFramebuffer(GL_FRAMEBUFFER,FBO);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
-
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	
 	int i = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
 	if(i!=GL_FRAMEBUFFER_COMPLETE) {
@@ -364,25 +366,29 @@ bool Setup()
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	
-	ofstream os;
-	os.open("out.txt");
-	os << "_______________________________\n";
-	os << "Instructions\n\n";
-	os << "  z\n";
-	os << "q s d: move\n\n";
-	os << "b: toogle blend phong and ssao\n";
-	os << "S: SSAO rendering\n";
-	os << "P: Phong rendering\n";
-	os << "D: depth\n";
-	os << "N: normals\n";
-	os << "T: next scene texture\n";
-
+	std::cout << "_______________________________\n";
+	std::cout << "Instructions\n\n";
+	std::cout << "navigation:\n";
+	std::cout << "----------\n";
+	std::cout << "  z\n";
+	std::cout << "q s d: move\n\n";
+	std::cout << "right-click: toggle camera pitch/yaw mode\n";
+	std::cout << "mouse move: camera pitch/yaw (if enabled)\n\n";
+	std::cout << "render:\n";
+	std::cout << "------\n";
+	std::cout << "b: toogle blend phong and ssao (only in SSAO render mode)\n";
+	std::cout << "S: SSAO rendering\n";
+	std::cout << "P: Phong rendering\n";
+	std::cout << "D: fragment depth\n";
+	std::cout << "N: fragment normal\n";
+	std::cout << "V: fragment position\n";
+	std::cout << "T: next scene texture\n";
+	
 	return true;
 }
 
 void Update(float elapsedTime)
 {
-	//obj.Process(elapsedTime);
 	camera.update();
 }
 
@@ -430,6 +436,9 @@ void keyFunc(unsigned char key, int x, int y) {
 	}
 	else if (key == 'N') {
 		render = NORMALS;
+	}
+	else if (key == 'V') {
+		render = POSITIONS;
 	}
 	else if (key == 'b') {
 		blend = !blend;
