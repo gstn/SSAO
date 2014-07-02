@@ -28,3 +28,4 @@ Projects/Model_OBJ/Debug GL2/cl.command.1.tlog
 *.idb
 *.vcxproj
 *.exe
+*.lib
