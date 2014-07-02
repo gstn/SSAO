@@ -31,7 +31,7 @@ void Camera::translate(vec3 translation) {
 	_viewMatrix.T.z += translation.z;
 }
 
-void Camera::updatePosition() {
+void Camera::updatePosition(float elapsedTime) {
 
 	bool noInput = true;
 
@@ -51,8 +51,16 @@ void Camera::updatePosition() {
 		_translationSpeed.z = -MAX_SPEED;
 		noInput = false;
 	}
+	if(_moveUp) {
+		_translationSpeed.y = -MAX_SPEED;
+		noInput = false;
+	}
+	if(_moveDown) {
+		_translationSpeed.y = MAX_SPEED;
+		noInput = false;
+	}
 
-	if(_jumping) {
+	if (_jumping) {
 
 		_jumpSpeed += GRAVITY;
 
@@ -71,16 +79,16 @@ void Camera::updatePosition() {
 		_translationSpeed = _translationSpeed.Normalized() * MAX_SPEED;
 	}
 
-	translate(vec3(_translationSpeed.x, _jumpSpeed, _translationSpeed.z));
+	translate(vec3(_translationSpeed.x, _translationSpeed.y + _jumpSpeed, _translationSpeed.z) * elapsedTime);
 }
 
-void Camera::update() {
-	updateRotation();
-	updatePosition();
+void Camera::update(float elapsedTime) {
+	updateRotation(elapsedTime);
+	updatePosition(elapsedTime);
 }
+
 
 void Camera::jump() {
-
 	if(!_jumping) {
 		_groundZ = _viewMatrix.T.y;
 		_jumpSpeed = -JUMP_FORCE;

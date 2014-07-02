@@ -202,6 +202,7 @@ mat4 esgiLookAt(const vec3 &eye, const vec3 &target, const vec3 &up);
 mat4 esgiOrtho(float left, float right, float bottom, float top, float near, float far);
 mat4 esgiFrustum(float left, float right, float bottom, float top, float near, float far);
 mat4 esgiPerspective(float fovy, float aspect, float near, float far);
+vec4 esgiPerspectiveFrustum(float fovy, float aspect, float near, float far);
 
 
 #endif // ESGI_MATHS_MATRIX

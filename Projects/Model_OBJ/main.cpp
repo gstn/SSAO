@@ -11,6 +11,8 @@
 
 #define WIDTH 1024.0f
 #define HEIGHT 600.0f
+#define NEAR 0.1f
+#define FAR 500.f
 
 struct Light {
     vec3 position;
@@ -28,32 +30,27 @@ Mesh * quad;
 EsgiShader shader;
 EsgiShader blurShader;
 EsgiShader quadShader;
+EsgiShader ssao2DShader;
 EsgiShader ssaoShader;
 EsgiShader blendShader;
 EsgiShader textureShader;
 
-mat4 projectionMatrix;
-mat4 projectionMatrixP;
 mat4 viewMatrix;
 Light gLight;
 
+float elapsedTime;
+
+unsigned int FBO;
+unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture, normalTexture, positionTexture, sceneTexture, noiseTexture;
+
 //render controls
-enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE, POSITIONS};
+enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE, POSITIONS, NOISE};
 int render = SSAO;
 bool blend = true;
 bool renderSSAO = false;
-
-float g_rotation;
-double a=0;
-int MatSpec [4] = {1,1,1,1};
-int LightPos[4] = {0,0,3,1};
-
-unsigned int FBO;
-unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture, normalTexture, positionTexture, sceneTexture;
-unsigned int texturesArray[2];
-
+bool ssao2D = true;
 int blurIntensity = 0;
-
+float ssaoRadius = 10.0f;
 
 unsigned int createTexture(int w,int h,bool isDepth = false)
 {
@@ -88,15 +85,13 @@ void Draw()
 	GLuint programObject = shader.GetProgram();
 	glUseProgram(programObject);
 
+	//Projection matrix
+	mat4 projectionMatrix = camera.getProjectionMatrix();
 	//View Matrix
 	viewMatrix.Identity();
 	viewMatrix.T.set(0.f, -0.5f, -2.f, 1.f);
 	//camera.rotate(vec3(0.f, 0.f, 0.8f));
 	viewMatrix = camera.getViewMatrix();
-
-	//Projection Matrix
-	//projectionMatrix = esgiOrtho(0.f, WIDTH, 0.f, HEIGHT, 0.f, 1.f);	
-	projectionMatrixP = esgiPerspective(45.f, WIDTH/HEIGHT, 0.1f, 500.f);
 
 	//ModelView Matrix
 	// tourne autour de l'axe Y du monde
@@ -107,8 +102,7 @@ void Draw()
 	modelMatrix.Identity();
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
-
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrix.I.x);
 	glUniform3fv(glGetUniformLocation(programObject, "u_LightPosition"), 1, &gLight.position.x);
 	glUniform3fv(glGetUniformLocation(programObject, "u_LightIntensities"), 1, &gLight.intensities.x);
 
@@ -130,15 +124,42 @@ void Draw()
 	if (render == SSAO) {
 		//ssao
 		glDisable(GL_DEPTH_TEST);
-		programObject = ssaoShader.GetProgram();
-		glUseProgram(programObject);
 
-		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
+		//ssao 2d
+		if(ssao2D) {
+			programObject = ssao2DShader.GetProgram();
+			glUseProgram(programObject);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, depthTexture);
-	
+			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, depthTexture);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, noiseTexture);
+			glUniform1f(glGetUniformLocation(programObject, "u_radius"), ssaoRadius);
+		}
+		//ssao 3d
+		else {
+			programObject = ssaoShader.GetProgram();
+			glUseProgram(programObject);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, depthTexture);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, normalTexture);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, positionTexture);
+			glActiveTexture(GL_TEXTURE3);
+			glBindTexture(GL_TEXTURE_2D, noiseTexture);
+
+			glUniform1f(glGetUniformLocation(programObject, "u_radius"), ssaoRadius);
+			glUniformMatrix4fv(glGetUniformLocation(programObject, "u_persMatrix"), 1, 0, &projectionMatrix.I.x);
+		}
+
 		quad->draw(programObject);
 
 		//Blur
@@ -204,6 +225,8 @@ void Draw()
 			glBindTexture(GL_TEXTURE_2D, normalTexture);
 		} else if (render == POSITIONS) {
 			glBindTexture(GL_TEXTURE_2D, positionTexture);
+		} else if(render == NOISE) {
+			glBindTexture(GL_TEXTURE_2D, noiseTexture);
 		}
 
 		quad->draw(programObject);
@@ -212,13 +235,13 @@ void Draw()
 
 bool Setup()
 {
-	//load the scene
-	loader = new SceneLoader("obj/courtyard/courtyard.obj");
-
+	mat4 projectionMatrix;
 	mat4 viewMatrix;
 	viewMatrix.Identity();
 	viewMatrix.T.set(0.f, -1.5f, 1.f, 1.f);
 	camera.setViewMatrix(viewMatrix);
+	camera.setProjectionMatrix(esgiPerspective(45.f, WIDTH/HEIGHT, NEAR, FAR));
+	vec4 frustum = esgiPerspectiveFrustum(45.f, WIDTH/HEIGHT, NEAR, FAR);
 
 	//init kernel and noise
 	initKernel();
@@ -231,13 +254,18 @@ bool Setup()
 	
 	//blur shader
 	blurShader.LoadVertexShader("basic.vert");
-	blurShader.LoadFragmentShader("blur.frag");
+	blurShader.LoadFragmentShader("blur4.frag");
 	blurShader.Create();
 
 	//quadShader
 	quadShader.LoadVertexShader("basic.vert");
 	quadShader.LoadFragmentShader("quadRender.frag");
 	quadShader.Create();
+	
+	//ssao2D shader
+	ssao2DShader.LoadVertexShader("basic.vert");
+	ssao2DShader.LoadFragmentShader("ssao2D.frag");
+	ssao2DShader.Create();
 
 	//ssao shader
 	ssaoShader.LoadVertexShader("basic.vert");
@@ -254,6 +282,10 @@ bool Setup()
 	textureShader.LoadFragmentShader("renderTexture.frag");
 	textureShader.Create();
 	
+	//load the scene
+	loader = new SceneLoader("obj/courtyard/courtyard.obj");
+	//loader = new SceneLoader("obj/suzanne/suzanne.obj");
+
 	gLight.position = vec3(0.0,-3.0,-9.0);
 	gLight.intensities = vec3(0.8, 0.8, 0.8);
 
@@ -262,9 +294,26 @@ bool Setup()
 	ssaoTexture2 = createTexture(WIDTH, HEIGHT);
 	depthTexture = createTexture(WIDTH, HEIGHT, true);
 	normalTexture = createTexture(WIDTH, HEIGHT);
-	positionTexture = createTexture(WIDTH, HEIGHT);
+	//positionTexture = createTexture(WIDTH, HEIGHT);
+	noiseTexture = createTexture(4, 4, false);
 
-	glGenFramebuffers(1,&FBO);
+	glGenTextures(1, &positionTexture);
+	glBindTexture(GL_TEXTURE_2D, positionTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_BGRA, GL_UNSIGNED_BYTE, &noiseTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glGenFramebuffers(1, &FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 	
 	int i = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -313,13 +362,12 @@ bool Setup()
 	//init quad position
 	mat4 world;
 	mat4 modelMatrix;
-	mat4 projectionMatrix;
 
 	world.Identity();
 	viewMatrix.Identity();
 	viewMatrix.T.set(0.f, 0.f, 0.f, -1.f);
 	modelMatrix = esgiMultiplyMatrix(viewMatrix, world);
-	projectionMatrixP = esgiOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
+	mat4 projectionMatrixP = esgiOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
 
 	GLuint programObject = blurShader.GetProgram();
 	glUseProgram(programObject);
@@ -336,17 +384,34 @@ bool Setup()
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
-
-	programObject = ssaoShader.GetProgram();
+	
+	programObject = ssao2DShader.GetProgram();
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "u_depthTexture"), 0);
 	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	glUniform1i(glGetUniformLocation(programObject, "u_kernelSize"), kernelSize);
 	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), kernelSize, kernel);
+	
+	programObject = ssaoShader.GetProgram();
+	glUseProgram(programObject);
+	glUniform1i(glGetUniformLocation(programObject, "u_depthTexture"), 0);
+	glUniform1i(glGetUniformLocation(programObject, "u_normalTexture"), 1);
+	glUniform1i(glGetUniformLocation(programObject, "u_positionTexture"), 2);
+	glUniform1i(glGetUniformLocation(programObject, "u_noiseTexture"), 3);
+	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+	glUniform1f(glGetAttribLocation(programObject, "u_screenW"), WIDTH);
+	glUniform1f(glGetAttribLocation(programObject, "u_screenH"), HEIGHT);
+	glUniform1i(glGetUniformLocation(programObject, "u_kernelSize"), kernelSize);
+	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), kernelSize, kernel);
+	glUniform1f(glGetUniformLocation(programObject, "u_near"), NEAR);
+	glUniform1f(glGetUniformLocation(programObject, "u_far"), FAR);
+	glUniform4f(glGetUniformLocation(programObject, "u_frustum"), frustum.x, frustum.y, frustum.z, frustum.w);
 
 	programObject = blendShader.GetProgram();
 	glUseProgram(programObject);
@@ -356,7 +421,6 @@ bool Setup()
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 
 	programObject = textureShader.GetProgram();
 	glUseProgram(programObject);
@@ -364,14 +428,15 @@ bool Setup()
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
-	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
-	
+
 	std::cout << "_______________________________\n";
 	std::cout << "Instructions\n\n";
 	std::cout << "navigation:\n";
 	std::cout << "----------\n";
 	std::cout << "  z\n";
 	std::cout << "q s d: move\n\n";
+	std::cout << "p: move up\n";
+	std::cout << "m: move down\n";
 	std::cout << "right-click: toggle camera pitch/yaw mode\n";
 	std::cout << "mouse move: camera pitch/yaw (if enabled)\n\n";
 	std::cout << "render:\n";
@@ -382,14 +447,16 @@ bool Setup()
 	std::cout << "D: fragment depth\n";
 	std::cout << "N: fragment normal\n";
 	std::cout << "V: fragment position\n";
+	std::cout << "W: toggle SSAO/SSAO2D\n";
 	std::cout << "T: next scene texture\n";
 	
 	return true;
 }
 
-void Update(float elapsedTime)
+void Update(float deltaTime)
 {
-	camera.update();
+	elapsedTime = deltaTime;
+	camera.update(deltaTime);
 }
 
 void Clean()
@@ -443,6 +510,12 @@ void keyFunc(unsigned char key, int x, int y) {
 	else if (key == 'b') {
 		blend = !blend;
 	}
+	else if (key == 'n') {
+		render = NOISE;
+	}
+	else if (key == 'W') {
+		ssao2D = !ssao2D;
+	}
 	else if (key == '+') {
 		++blurIntensity;
 		std::cout << "Blur level: " << blurIntensity << std::endl;
@@ -450,6 +523,12 @@ void keyFunc(unsigned char key, int x, int y) {
 	else if (key == '-' && blurIntensity != 0) {
 		--blurIntensity;
 		std::cout << "Blur level: " << blurIntensity << std::endl;
+	}
+	else if (key == 'p') {
+		camera.moveUp(true);
+	}
+	else if (key == 'm') {
+		camera.moveDown(true);
 	}
 	//space
 	else if(key == 32) {
@@ -474,7 +553,12 @@ void keyUpFunc(unsigned char key, int x, int y) {
 	else if (key == 100) {
 		camera.moveRight(false);
 	}
-
+	else if (key == 'p') {
+		camera.moveUp(false);
+	}
+	else if (key == 'm') {
+		camera.moveDown(false);
+	}
 	if(key == 27) {
 		exit(0);
 	}
@@ -490,8 +574,8 @@ void mouseFunc(int button, int state, int x, int y) {
 
 void passiveMotionFunc(int x, int y) {
 	if (look) {
-		float yaw = ( x / WIDTH - .5 ) * 3;
-		float pitch = ( y / HEIGHT - .5 ) * 3;
+		float yaw = ( x / WIDTH - .5 ) * 20;
+		float pitch = ( y / HEIGHT - .5 ) * 20;
 
 		float yawSign = yaw > 0 ? 1.f : -1.f;
 		float pitchSign = pitch > 0 ? 1.f : -1.f;
@@ -499,6 +583,9 @@ void passiveMotionFunc(int x, int y) {
 		yaw *= yawSign * yaw;
 		pitch *= pitchSign * pitch;
 		camera.setRotation(pitch, yaw);
+	} else {
+		ssaoRadius = x / WIDTH * 20;
+		//std::cout << ssaoRadius << std::endl;
 	}
 }
 

@@ -11,7 +11,7 @@ in vec4 vertex;
 in vec3 normal;
 in vec4 tangent;
 in vec4 color;
-in vec2 uv;
+in vec3 uv;
 
 out vec4 v_color;
 out vec2 v_uv;
@@ -26,6 +26,6 @@ void main()
 	gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * vertex;
 	
 	v_color = color;
-	v_uv = uv;
+	v_uv = uv.xy;
 	v_normal = mat3(u_ViewMatrix * u_ModelMatrix)*normal;
 }

@@ -219,13 +219,12 @@ struct Vector3
 template <typename T>
 struct Vector4 
 {
-    //Vector4() {}
-    //Vector4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+    Vector4() {}
+    Vector4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
     //Vector4(const Vector3<T>& v, T w) : x(v.x), y(v.y), z(v.z), w(w) {}
 
     void set(T _x, T _y, T _z, T _w) { x = _x; y = _y; z = _z; w = _w; };
     void set(const Vector3<T>& v, T _w) { x = v.x; y = v.y; z = v.z; w = _w; };
-    
  
     Vector4 operator+(const Vector4& v) const
     {

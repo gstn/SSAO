@@ -145,3 +145,13 @@ mat4 esgiPerspective(float fovy, float aspect, float near, float far)
 
 	return esgiFrustum(-frustumW, frustumW, -frustumH, frustumH, near, far);
 }
+
+vec4 esgiPerspectiveFrustum(float fovy, float aspect, float near, float far)
+{
+	float frustumW, frustumH;
+   
+	frustumH = tanf( fovy / 360.0f * ESGI_PI ) * near;
+	frustumW = frustumH * aspect;
+
+	return vec4(-frustumW, frustumW, -frustumH, frustumH);
+}

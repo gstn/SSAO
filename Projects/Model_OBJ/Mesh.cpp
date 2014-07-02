@@ -41,7 +41,7 @@ void Mesh::draw(unsigned int programId) {
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		//std::string curStr = str + (char)(i + '0');
 		//glUniform1i(glGetUniformLocation(programId,  (char *)curStr.c_str()), i);
-		glUniform1i(glGetUniformLocation(programId,  "u_texture0"), i);
+		//glUniform1i(glGetUniformLocation(programId,  "u_texture0"), i);
 	}
 	
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);

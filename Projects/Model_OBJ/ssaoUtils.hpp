@@ -3,9 +3,9 @@
 
 #define PI 3.14159265
 
-const int kernelSize = 40;
+const int kernelSize = 10;
 float kernel[3 * kernelSize];
-const int noiseSize = 5;
+const int noiseSize = 16;
 vec3 noise[noiseSize];
 
 float random(float a, float b) {
@@ -48,4 +48,3 @@ void initNoiseTexture() {
 		noise[i].Normalize();
 	}
 }
-

@@ -4,9 +4,10 @@
 #include "../../ESGIGL/common/vector.h"
 #include "../../ESGIGL/EsgiGL.h"
 
-#define MAX_SPEED 0.05f
-#define GRAVITY 0.004f
-#define JUMP_FORCE 0.1f
+#define MAX_SPEED 2.f
+#define GRAVITY 0.3f
+#define JUMP_FORCE 6.f
+#define CROUCH_SPEED 0.1f
 
 class Camera
 {
@@ -29,10 +30,12 @@ public:
 	void moveRight(bool state) { _moveRight = state; }
 	void moveForward(bool state) { _moveForward = state; }
 	void moveBackwards(bool state) { _moveBackwards = state; }
+	void moveUp(bool state) { _moveUp = state; }
+	void moveDown(bool state) { _moveDown = state; }
 	void jump();
 
 	void freezeRotation() { _pitch = _yaw = 0.f; }
-	void update();
+	void update(float elapsedTime);
 
 private:
 	mat4 _pitchMatrix;
@@ -52,10 +55,12 @@ private:
 	bool _moveRight;
 	bool _moveForward;
 	bool _moveBackwards;
+	bool _moveUp;
+	bool _moveDown;
 	bool _jumping;
 
 	float _groundZ;
 
-	void updateRotation() { rotate(vec3(_pitch, _yaw, 0.f)); }
-	void updatePosition();
+	void updateRotation(float elapsedTime) { rotate(vec3(_pitch, _yaw, 0.f) * elapsedTime); }
+	void updatePosition(float elapsedTime);
 };
