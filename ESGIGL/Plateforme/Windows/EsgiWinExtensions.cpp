@@ -58,6 +58,7 @@ PFNGLVERTEXATTRIB3FPROC                         glVertexAttrib3f                
 PFNGLVERTEXATTRIB4FPROC                         glVertexAttrib4f                = NULL;
 PFNGLUNIFORM1FPROC                              glUniform1f                     = NULL;
 PFNGLUNIFORM1IPROC                              glUniform1i                     = NULL;
+PFNGLUNIFORM2FPROC                              glUniform2f                     = NULL;
 PFNGLUNIFORM3FPROC                              glUniform3f                     = NULL;
 PFNGLUNIFORM4FPROC                              glUniform4f                     = NULL;
 PFNGLUNIFORM1FVPROC                             glUniform1fv                    = NULL;
@@ -152,6 +153,7 @@ void InitOGLExtensions()
 	glVertexAttrib4f = (PFNGLVERTEXATTRIB4FPROC)wglGetProcAddress("glVertexAttrib4f");
 	glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
 	glUniform1i = (PFNGLUNIFORM1IPROC)wglGetProcAddress("glUniform1i");
+	glUniform2f = (PFNGLUNIFORM2FPROC)wglGetProcAddress("glUniform2f");
 	glUniform3f = (PFNGLUNIFORM3FPROC)wglGetProcAddress("glUniform3f");
 	glUniform4f = (PFNGLUNIFORM4FPROC)wglGetProcAddress("glUniform4f");
 	glUniform1fv = (PFNGLUNIFORM1FVPROC)wglGetProcAddress("glUniform1fv");

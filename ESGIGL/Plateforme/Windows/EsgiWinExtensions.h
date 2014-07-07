@@ -83,6 +83,7 @@ extern PFNGLVERTEXATTRIB3FPROC                          glVertexAttrib3f;
 extern PFNGLVERTEXATTRIB4FPROC                          glVertexAttrib4f;
 extern PFNGLUNIFORM1IPROC                               glUniform1i;
 extern PFNGLUNIFORM1FPROC                               glUniform1f;
+extern PFNGLUNIFORM2FPROC                               glUniform2f;
 extern PFNGLUNIFORM3FPROC                               glUniform3f;
 extern PFNGLUNIFORM4FPROC                               glUniform4f;
 extern PFNGLUNIFORM1FVPROC                              glUniform1fv;

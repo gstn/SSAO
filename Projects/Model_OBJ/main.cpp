@@ -48,11 +48,11 @@ enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE, POSITIONS, NOISE};
 int render = SSAO;
 bool blend = true;
 bool renderSSAO = false;
-bool ssao2D = true;
+bool ssao2D = false;
 int blurIntensity = 0;
 float ssaoRadius = 10.0f;
 
-unsigned int createTexture(int w,int h,bool isDepth = false)
+unsigned int createTexture(int w, int h, bool isDepth = false)
 {
 	unsigned int textureId;
 	glGenTextures(1, &textureId);
@@ -152,9 +152,9 @@ void Draw()
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, normalTexture);
 			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, positionTexture);
-			glActiveTexture(GL_TEXTURE3);
 			glBindTexture(GL_TEXTURE_2D, noiseTexture);
+			//glActiveTexture(GL_TEXTURE3);
+			//glBindTexture(GL_TEXTURE_2D, positionTexture);
 
 			glUniform1f(glGetUniformLocation(programObject, "u_radius"), ssaoRadius);
 			glUniformMatrix4fv(glGetUniformLocation(programObject, "u_persMatrix"), 1, 0, &projectionMatrix.I.x);
@@ -283,8 +283,8 @@ bool Setup()
 	textureShader.Create();
 	
 	//load the scene
-	loader = new SceneLoader("obj/courtyard/courtyard.obj");
-	//loader = new SceneLoader("obj/suzanne/suzanne.obj");
+	//loader = new SceneLoader("obj/courtyard/courtyard.obj");
+	loader = new SceneLoader("obj/teapots.obj");
 
 	gLight.position = vec3(0.0,-3.0,-9.0);
 	gLight.intensities = vec3(0.8, 0.8, 0.8);
@@ -294,9 +294,10 @@ bool Setup()
 	ssaoTexture2 = createTexture(WIDTH, HEIGHT);
 	depthTexture = createTexture(WIDTH, HEIGHT, true);
 	normalTexture = createTexture(WIDTH, HEIGHT);
-	//positionTexture = createTexture(WIDTH, HEIGHT);
-	noiseTexture = createTexture(4, 4, false);
+	positionTexture = createTexture(WIDTH, HEIGHT);
+	//noiseTexture = createTexture(4, 4, false);
 
+	/*
 	glGenTextures(1, &positionTexture);
 	glBindTexture(GL_TEXTURE_2D, positionTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
@@ -304,21 +305,24 @@ bool Setup()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
+	*/
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, noiseTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_BGRA, GL_UNSIGNED_BYTE, &noiseTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 4, 4, 0, GL_RGB, GL_FLOAT, &noise[0].x);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
+	
 	glGenFramebuffers(1, &FBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
 	
 	int i = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
-	if(i!=GL_FRAMEBUFFER_COMPLETE) {
+	if(i != GL_FRAMEBUFFER_COMPLETE) {
 		std::cout << "Framebuffer is not OK, status=" << i << std::endl;
 	}
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -372,7 +376,7 @@ bool Setup()
 	GLuint programObject = blurShader.GetProgram();
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
-	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniform2f(glGetUniformLocation(programObject, "u_pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
@@ -380,7 +384,7 @@ bool Setup()
 	programObject = quadShader.GetProgram();
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "texture"), 0);
-	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniform2f(glGetUniformLocation(programObject, "u_pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
@@ -388,27 +392,27 @@ bool Setup()
 	programObject = ssao2DShader.GetProgram();
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "u_depthTexture"), 0);
-	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniform2f(glGetUniformLocation(programObject, "u_pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
 	glUniform1i(glGetUniformLocation(programObject, "u_kernelSize"), kernelSize);
-	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), kernelSize, kernel);
+	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), kernelSize, &kernel[0].x);
 	
 	programObject = ssaoShader.GetProgram();
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "u_depthTexture"), 0);
 	glUniform1i(glGetUniformLocation(programObject, "u_normalTexture"), 1);
-	glUniform1i(glGetUniformLocation(programObject, "u_positionTexture"), 2);
-	glUniform1i(glGetUniformLocation(programObject, "u_noiseTexture"), 3);
-	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
+	glUniform1i(glGetUniformLocation(programObject, "u_positionTexture"), 3);
+	glUniform1i(glGetUniformLocation(programObject, "u_noiseTexture"), 2);
+	glUniform2f(glGetUniformLocation(programObject, "u_pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
-	glUniform1f(glGetAttribLocation(programObject, "u_screenW"), WIDTH);
-	glUniform1f(glGetAttribLocation(programObject, "u_screenH"), HEIGHT);
 	glUniform1i(glGetUniformLocation(programObject, "u_kernelSize"), kernelSize);
-	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), kernelSize, kernel);
+	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), MAX_KERNEL_SIZE, &kernel[0].x);
+	glUniform3fv(glGetUniformLocation(programObject, "u_noise"), noiseSize, &noise[0].x);
+	glUniform2f(glGetUniformLocation(programObject, "u_noiseScale"), WIDTH / noiseSize, HEIGHT / noiseSize);
 	glUniform1f(glGetUniformLocation(programObject, "u_near"), NEAR);
 	glUniform1f(glGetUniformLocation(programObject, "u_far"), FAR);
 	glUniform4f(glGetUniformLocation(programObject, "u_frustum"), frustum.x, frustum.y, frustum.z, frustum.w);
@@ -417,7 +421,6 @@ bool Setup()
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "u_renderTexture"), 0);
 	glUniform1i(glGetUniformLocation(programObject, "u_ssaoTexture"), 1);
-	glUniform3f(glGetUniformLocation(programObject, "pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT, 0);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
@@ -584,7 +587,7 @@ void passiveMotionFunc(int x, int y) {
 		pitch *= pitchSign * pitch;
 		camera.setRotation(pitch, yaw);
 	} else {
-		ssaoRadius = x / WIDTH * 20;
+		ssaoRadius = x / WIDTH * 5.0;
 		//std::cout << ssaoRadius << std::endl;
 	}
 }

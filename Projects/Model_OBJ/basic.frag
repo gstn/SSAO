@@ -1,19 +1,18 @@
 #version 330
 
+uniform vec3 u_LightIntensities;
+uniform vec3 u_LightPosition;
+uniform sampler2D u_diffuseTexture;
+uniform sampler2D u_normalTexture;
+
 in vec4 v_color;
 in vec2 v_uv;
 in vec3 v_normal;
 in vec3 v_position;
 in vec3 v_lightPos;
 
-//out vec4 o_color;
 layout(location=0) out vec4 o_color;
 layout(location=1) out vec4 o_normal;
-layout(location=2) out vec4 o_position;
-
-uniform vec3 u_LightIntensities;
-uniform vec3 u_LightPosition;
-uniform sampler2D u_texture0;
 
 void main()
 {
@@ -33,11 +32,10 @@ void main()
 	vec3 vambient = vec3( 0.2 );
 
 	//texture
-	vec4 vtexture = texture2D(u_texture0, v_uv);
+	vec4 vtexture = texture2D(u_diffuseTexture, v_uv);
 
 	vec3 color = (vdiffuse + vspec) * u_LightIntensities;
 	
 	o_color = vec4(color + vambient, 1 ) * vtexture;
 	o_normal = vec4(v_normal * 0.5 + 0.5, 1.0);
-	o_position = vec4(v_position.xy, -v_position.z, 1.0);
 }

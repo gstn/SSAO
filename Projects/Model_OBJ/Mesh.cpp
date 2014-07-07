@@ -36,6 +36,10 @@ void Mesh::draw(unsigned int programId) {
 
 	//textures
 	std::string str = "u_texture";
+	if(textures.size() > 0) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[0].id);
+	}
 	for(int i = 0 ; i < textures.size(); ++i) {
 		glActiveTexture(GL_TEXTURE0 + i);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
@@ -52,10 +56,10 @@ void Mesh::draw(unsigned int programId) {
 	
 	glEnableVertexAttribArray(normal);
 	glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, sizeof(vertexData), (void*)(3 * sizeof(float)) );
-	/*
+
 	glEnableVertexAttribArray(tangent);
 	glVertexAttribPointer(tangent, 3, GL_FLOAT, GL_FALSE, sizeof(vertexData), (void*)(6 * sizeof(float)) );
-
+	/*
 	glEnableVertexAttribArray(color);
 	glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, sizeof(vertexData), (void*)(9 * sizeof(float)) );
 	*/

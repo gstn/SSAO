@@ -85,7 +85,6 @@ void SceneLoader::processMesh(aiMesh * mesh, const aiScene * scene) {
 		aiString str;
 		mat->GetTexture(aiTextureType_DIFFUSE, i, &str);
 		textureData td;
-		//const char * name = str.C_Str();
 		char name[FILENAME_MAX];
 		getFilename(str.C_Str(), name);
 

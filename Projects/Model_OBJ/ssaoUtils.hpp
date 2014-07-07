@@ -1,10 +1,12 @@
 #include <random>
 #include "../ESGIGL/common/vector.h"
+#include <iostream>
 
+#define MAX_KERNEL_SIZE 128
 #define PI 3.14159265
 
-const int kernelSize = 10;
-float kernel[3 * kernelSize];
+const int kernelSize = 64;
+vec3 kernel[MAX_KERNEL_SIZE];
 const int noiseSize = 16;
 vec3 noise[noiseSize];
 
@@ -12,28 +14,24 @@ float random(float a, float b) {
 	return ( rand()/(double)RAND_MAX ) * (b-a) + a;
 }
 
+float lerp(float a, float b, float value) {
+	return value / (b - a) + a;
+}
+
 void initKernel() {
-	for (int i = 0; i < kernelSize; ++i) {
-		vec3 sample = vec3(
+	for (int i = 0; i < MAX_KERNEL_SIZE; ++i) {
+		kernel[i] = vec3(
 			random(-1.0f, 1.0f),
 			random(-1.0f, 1.0f),
 			random(0.0f, 1.0f)
 			);
 		//clamp to unit hemisphere
-		sample.Normalize();
-
-		//focus sample points towards origin
-		sample = sample * random(0.0f, 1.0f);
+		kernel[i].Normalize();
 
 		//What we actually want is for the distance from the origin to falloff as we generate more points
-		//float scale = float(i) / float(kernelSize);
-		//scale = lerp(0.1, 1.0, scale * scale);
-		//kernel[i] *= scale;
-
-		int j = 3 * i;
-		kernel[j] = sample.x;
-		kernel[j + 1] = sample.y;
-		kernel[j + 2] = sample.z;
+		float scale = float(i) / float(kernelSize);
+		scale = lerp(0.1, 1.1, scale * scale);
+		kernel[i] = kernel[i] * scale;
 	}
 }
 
@@ -46,5 +44,7 @@ void initNoiseTexture() {
 			);
 
 		noise[i].Normalize();
+
+		//std::cout << noise[i].x << ", " << noise[i].y << ", " << noise[i].z << std::endl;
 	}
 }
