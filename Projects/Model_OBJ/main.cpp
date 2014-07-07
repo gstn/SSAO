@@ -41,14 +41,13 @@ Light gLight;
 float elapsedTime;
 
 unsigned int FBO;
-unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture, normalTexture, positionTexture, sceneTexture, noiseTexture;
+unsigned int renderTexture, ssaoTexture1, ssaoTexture2, depthTexture, normalTexture, sceneTexture, noiseTexture;
 
 //render controls
-enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE, POSITIONS, NOISE};
+enum Render {SSAO, PHONG, DEPTH, NORMALS, TEXTURE, NOISE};
 int render = SSAO;
 bool blend = true;
 bool renderSSAO = false;
-bool ssao2D = false;
 int blurIntensity = 0;
 float ssaoRadius = 10.0f;
 
@@ -94,7 +93,6 @@ void Draw()
 	viewMatrix = camera.getViewMatrix();
 
 	//ModelView Matrix
-	// tourne autour de l'axe Y du monde
 	mat4 world;
 	world.T.set(0.f, 0.f, 0.f, 1.f);
 
@@ -108,11 +106,10 @@ void Draw()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
-	GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
-	glDrawBuffers(3, mrt);
+	GLenum mrt[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, mrt);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTexture, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normalTexture, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, positionTexture, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
 	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -125,40 +122,20 @@ void Draw()
 		//ssao
 		glDisable(GL_DEPTH_TEST);
 
-		//ssao 2d
-		if(ssao2D) {
-			programObject = ssao2DShader.GetProgram();
-			glUseProgram(programObject);
+		programObject = ssaoShader.GetProgram();
+		glUseProgram(programObject);
 
-			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
 
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, depthTexture);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, noiseTexture);
-			glUniform1f(glGetUniformLocation(programObject, "u_radius"), ssaoRadius);
-		}
-		//ssao 3d
-		else {
-			programObject = ssaoShader.GetProgram();
-			glUseProgram(programObject);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, normalTexture);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, noiseTexture);
 
-			glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoTexture1, 0);
-
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, depthTexture);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, normalTexture);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, noiseTexture);
-			//glActiveTexture(GL_TEXTURE3);
-			//glBindTexture(GL_TEXTURE_2D, positionTexture);
-
-			glUniform1f(glGetUniformLocation(programObject, "u_radius"), ssaoRadius);
-			glUniformMatrix4fv(glGetUniformLocation(programObject, "u_persMatrix"), 1, 0, &projectionMatrix.I.x);
-		}
+		glUniform1f(glGetUniformLocation(programObject, "u_radius"), ssaoRadius);
 
 		quad->draw(programObject);
 
@@ -223,8 +200,6 @@ void Draw()
 			glBindTexture(GL_TEXTURE_2D, sceneTexture);
 		} else if (render == NORMALS) {
 			glBindTexture(GL_TEXTURE_2D, normalTexture);
-		} else if (render == POSITIONS) {
-			glBindTexture(GL_TEXTURE_2D, positionTexture);
 		} else if(render == NOISE) {
 			glBindTexture(GL_TEXTURE_2D, noiseTexture);
 		}
@@ -241,7 +216,7 @@ bool Setup()
 	viewMatrix.T.set(0.f, -1.5f, 1.f, 1.f);
 	camera.setViewMatrix(viewMatrix);
 	camera.setProjectionMatrix(esgiPerspective(45.f, WIDTH/HEIGHT, NEAR, FAR));
-	vec4 frustum = esgiPerspectiveFrustum(45.f, WIDTH/HEIGHT, NEAR, FAR);
+	projectionMatrix = camera.getProjectionMatrix();
 
 	//init kernel and noise
 	initKernel();
@@ -294,19 +269,8 @@ bool Setup()
 	ssaoTexture2 = createTexture(WIDTH, HEIGHT);
 	depthTexture = createTexture(WIDTH, HEIGHT, true);
 	normalTexture = createTexture(WIDTH, HEIGHT);
-	positionTexture = createTexture(WIDTH, HEIGHT);
-	//noiseTexture = createTexture(4, 4, false);
-
-	/*
-	glGenTextures(1, &positionTexture);
-	glBindTexture(GL_TEXTURE_2D, positionTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	*/
 	
+	//noise texture
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, noiseTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, 4, 4, 0, GL_RGB, GL_FLOAT, &noise[0].x);
@@ -403,19 +367,13 @@ bool Setup()
 	glUseProgram(programObject);
 	glUniform1i(glGetUniformLocation(programObject, "u_depthTexture"), 0);
 	glUniform1i(glGetUniformLocation(programObject, "u_normalTexture"), 1);
-	glUniform1i(glGetUniformLocation(programObject, "u_positionTexture"), 3);
 	glUniform1i(glGetUniformLocation(programObject, "u_noiseTexture"), 2);
-	glUniform2f(glGetUniformLocation(programObject, "u_pixelSize"), 1.0 / WIDTH, 1.0 / HEIGHT);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ModelMatrix"), 1, 0, &modelMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ViewMatrix"), 1, 0, &viewMatrix.I.x);
 	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_ProjectionMatrix"), 1, 0, &projectionMatrixP.I.x);
+	glUniformMatrix4fv(glGetUniformLocation(programObject, "u_persMatrix"), 1, 0, &projectionMatrix.I.x);
 	glUniform1i(glGetUniformLocation(programObject, "u_kernelSize"), kernelSize);
 	glUniform3fv(glGetUniformLocation(programObject, "u_kernel"), MAX_KERNEL_SIZE, &kernel[0].x);
-	glUniform3fv(glGetUniformLocation(programObject, "u_noise"), noiseSize, &noise[0].x);
-	glUniform2f(glGetUniformLocation(programObject, "u_noiseScale"), WIDTH / noiseSize, HEIGHT / noiseSize);
-	glUniform1f(glGetUniformLocation(programObject, "u_near"), NEAR);
-	glUniform1f(glGetUniformLocation(programObject, "u_far"), FAR);
-	glUniform4f(glGetUniformLocation(programObject, "u_frustum"), frustum.x, frustum.y, frustum.z, frustum.w);
 
 	programObject = blendShader.GetProgram();
 	glUseProgram(programObject);
@@ -449,8 +407,6 @@ bool Setup()
 	std::cout << "P: Phong rendering\n";
 	std::cout << "D: fragment depth\n";
 	std::cout << "N: fragment normal\n";
-	std::cout << "V: fragment position\n";
-	std::cout << "W: toggle SSAO/SSAO2D\n";
 	std::cout << "T: next scene texture\n";
 	
 	return true;
@@ -507,17 +463,11 @@ void keyFunc(unsigned char key, int x, int y) {
 	else if (key == 'N') {
 		render = NORMALS;
 	}
-	else if (key == 'V') {
-		render = POSITIONS;
-	}
 	else if (key == 'b') {
 		blend = !blend;
 	}
 	else if (key == 'n') {
 		render = NOISE;
-	}
-	else if (key == 'W') {
-		ssao2D = !ssao2D;
 	}
 	else if (key == '+') {
 		++blurIntensity;
