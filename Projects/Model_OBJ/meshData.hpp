@@ -16,3 +16,9 @@ struct textureData {
 	unsigned int type;
 	char name[FILENAME_MAX];
 };
+
+struct objectTextures {
+	textureData diffuse;
+	textureData specular;
+	textureData normal;
+};

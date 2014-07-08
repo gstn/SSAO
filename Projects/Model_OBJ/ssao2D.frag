@@ -1,6 +1,6 @@
 #version 330
 
-uniform vec3 pixelSize;
+uniform vec2 u_pixelSize;
 uniform int u_kernelSize;
 uniform sampler2D u_depthTexture;
 uniform sampler2D u_noiseTexture;
@@ -17,7 +17,7 @@ float rand(vec2 co){
 void main()
 {
 	float occlusion = u_maxDepthDiff * u_kernelSize;
-	vec2 pos = gl_FragCoord.xy * pixelSize.xy;
+	vec2 pos = gl_FragCoord.xy * u_pixelSize;
 	float depth = texture2D(u_depthTexture, pos).x;
 
 	//float angle = rand(pos);
@@ -28,7 +28,7 @@ void main()
 		vec2 samplePos = u_kernel[i].xy;
 		samplePos.x = u_kernel[i].x * cos(angle) - u_kernel[i].y * sin(angle);
 		samplePos.y = u_kernel[i].x * sin(angle) + u_kernel[i].y * cos(angle);
-		float sampleDepth = texture2D(u_depthTexture, pos + samplePos * pixelSize.xy * u_radius / depth).x;
+		float sampleDepth = texture2D(u_depthTexture, pos + samplePos * u_pixelSize * u_radius / depth).x;
 
 		float depthDiff = depth - sampleDepth;
 
